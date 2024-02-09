@@ -1,10 +1,8 @@
 # __init__.py for graphvizrm module
 
-# Import core class(es)
-from .core.graph import Graph
-
-# Import any core functions if available
-# from .core.some_module import some_function
+# Import the extended Graph object and any other utilities you want to expose
+from .core import graph
+from networkx import Graph
 
 # Optionally, set a version number
 # __version__ = '1.0.0'

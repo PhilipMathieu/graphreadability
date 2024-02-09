@@ -1,11 +1,14 @@
 import unittest
-from graphvizrm import Graph
+import networkx as nx
+import graphvizrm
 
 
 class TestGraph(unittest.TestCase):
+    """Basic graph tests."""
+
     def setUp(self):
         # Setup code, run before each test
-        self.graph = Graph()
+        self.graph = nx.Graph()
 
     def test_graph_initialization(self):
         # Test graph initialization (e.g., empty graph)
@@ -38,33 +41,49 @@ class TestGraph(unittest.TestCase):
         self.graph.remove_edge("A", "B")
         self.assertNotIn(("A", "B"), self.graph.edges)
 
-    def test_set_node_position(self):
-        # Test set_node_position function
-        self.graph.add_node("A")
-        self.graph.set_node_position("A", 0, 0)
-        self.assertEqual(self.graph.layout["A"]["x"], 0)
-        self.assertEqual(self.graph.layout["A"]["y"], 0)
 
-    def test_set_node_size(self):
-        # Test set_node_size function
-        self.graph.add_node("A")
-        self.graph.set_node_size("A", 100, 100)
-        self.assertEqual(self.graph.nodes["A"]["width"], 100)
-        self.assertEqual(self.graph.nodes["A"]["height"], 100)
+class TestGraphMonkeyPatching(unittest.TestCase):
+    """Tests for the monkey-patched graph class."""
 
-    def test_is_valid(self):
-        # Test is_valid function
-        self.graph.add_node("A")
-        self.graph.add_node("B")
-        self.graph.add_node("C")
-        self.graph.set_node_position("A", 0, 0)
-        self.graph.set_node_position("B", 0, 0)
-        self.graph.set_node_position("C", 0, 0)
-        self.assertTrue(self.graph.is_valid())
+    def setUp(self):
+        # Setup a graph instance for each test
+        self.G = nx.Graph()
 
-    def tearDown(self):
-        # Teardown code, run after each test
-        pass
+    def test_layout_positions(self):
+        # Assuming set_layout_positions was monkey patched onto nx.Graph
+        positions = {1: (0, 0), 2: (1, 1)}
+        self.G.set_layout_positions(positions)
+        self.assertEqual(
+            self.G.layout_positions, positions, "Layout positions not set correctly"
+        )
+
+    def test_is_cartesian_grid(self):
+        # Assuming is_cartesian_grid was monkey patched to include a setter and getter
+        self.G.is_cartesian_grid = True
+        self.assertTrue(
+            self.G.is_cartesian_grid, "Graph should be marked as Cartesian grid"
+        )
+
+        self.G.is_cartesian_grid = False
+        self.assertFalse(
+            self.G.is_cartesian_grid, "Graph should not be marked as Cartesian grid"
+        )
+
+    def test_metadata(self):
+        # Assuming add_metadata and get_metadata were monkey patched onto nx.Graph
+        metadata = {"description": "Example graph", "year": 2024}
+        self.G.add_metadata(**metadata)
+
+        for key, value in metadata.items():
+            self.assertEqual(
+                self.G.get_metadata(key), value, f"Metadata {key} not set correctly"
+            )
+
+        # Test default value for non-existent metadata
+        self.assertIsNone(
+            self.G.get_metadata("nonexistent_key"),
+            "Default value for nonexistent metadata key should be None",
+        )
 
 
 if __name__ == "__main__":
