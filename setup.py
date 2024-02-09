@@ -1,17 +1,18 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="graphvizrm",
+    name="graphreadability",
     version="0.1.0",
     author="Philip Mathieu",
     author_email="mathieu.p@northeastern.edu",
-    description="A Python module for analyzing graph and network visualizations.",
+    description="A Python module for applying readability metrics graph and network visualizations.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/GraphReadabilityAnalyzer",
+    url="https://github.com/PhilipMathieu/graphreadability",
     packages=find_packages(),
     install_requires=[
         "numpy",
+        "networkx",
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

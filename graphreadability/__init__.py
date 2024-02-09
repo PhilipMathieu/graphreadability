@@ -1,4 +1,4 @@
-# __init__.py for graphvizrm module
+# __init__.py for graphreadability module
 
 # Import the extended Graph object and any other utilities you want to expose
 from .core import graph
