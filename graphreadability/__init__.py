@@ -2,6 +2,7 @@
 
 # Import the extended Graph object and any other utilities you want to expose
 from .core import graph
+from .core.readabilitygraph import ReadabilityGraph
 from networkx import Graph
 
 # Optionally, set a version number
