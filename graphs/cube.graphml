@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <graph edgedefault="undirected">
+    <node id="(473, 118)" />
+    <node id="(610, 150)" />
+    <node id="(514, 310)" />
+    <node id="(669, 359)" />
+    <node id="(824, 266)" />
+    <node id="(782, 64)" />
+    <node id="(630, 15)" />
+    <node id="(684, 234)" />
+  </graph>
+</graphml>
