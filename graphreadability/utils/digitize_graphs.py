@@ -16,7 +16,7 @@ def nearby_nodes(nodes, x, y, radius=10):
 
 def main(args):
     # Prompt for an image path
-    if args.image_path:
+    if args.image:
         image_path = args.image
         print(f"Using image path: {image_path}")
     else:
