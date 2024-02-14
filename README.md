@@ -4,7 +4,7 @@ Python module for applying readability metrics to network and graph visualizatio
 
 ## Usage
 
-The basic functionality of this module is to extend NetworkX to introduce the ability to calculate readability metrics. For example, to calculate edge crossings on a simple graph consisting of two pairs of nodes with an "x" of edges:
+The basic functionality of this module is to extend [`networkx`](https://networkx.org/) to introduce the ability to calculate readability metrics. For example, to calculate edge crossings on a simple graph consisting of two pairs of nodes with an "x" of edges:
 
 ```python
 from graphreadability import ReadabilityGraph
@@ -30,7 +30,7 @@ crossings = graph.edge_crossings_global()
 
 ### Graph Digitizer
 
-This utility is a python package using MatPlotLib to show and image and allowing the user to click to add nodes, right click to delete nodes, and click two nodes sequentially to add edges.
+This utility is a python package using [`matplotlib`](https://matplotlib.org/) to show and image and allowing the user to click to add nodes, right click to delete nodes, and click two nodes sequentially to add edges.
 
 ```sh
 python graphreadability/utils/digitize_graphs.py -h
