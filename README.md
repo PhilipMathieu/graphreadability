@@ -53,6 +53,16 @@ Metric definitions are derived from:
 
 Initial inspiration was taken from [rpgove/greadability.js](https://github.com/rpgove/greadability/).
 
+Code in [`graphreadability/metrics/`](graphreadability/metrics/) is in part derived from code originally published at https://github.com/gavjmooney/graph_metrics/ associated with the following publication:
+```
+@Conference{citekey,
+  author       = "Gavin J. Mooney, Helen C. Purchase, Michael Wybrow, Stephen G. Kobourov",
+  title        = "The Multi-Dimensional Landscape of Graph Drawing Metrics",
+  booktitle    = "2024 IEEE 17th Pacific Visualization Symposium (PacificVis)",
+  year         = "2024",
+}
+```
+
 ## License
 
 All rights reserved for now (likely to be open sourced shortly).
