@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d1" for="node" attr.name="pos_y" attr.type="long" />
+  <key id="d0" for="node" attr.name="pos_x" attr.type="long" />
+  <graph edgedefault="undirected">
+    <node id="Node 1">
+      <data key="d0">471</data>
+      <data key="d1">118</data>
+    </node>
+    <node id="Node 2">
+      <data key="d0">609</data>
+      <data key="d1">151</data>
+    </node>
+    <node id="Node 3">
+      <data key="d0">781</data>
+      <data key="d1">65</data>
+    </node>
+    <node id="Node 4">
+      <data key="d0">824</data>
+      <data key="d1">265</data>
+    </node>
+    <node id="Node 5">
+      <data key="d0">670</data>
+      <data key="d1">362</data>
+    </node>
+    <node id="Node 6">
+      <data key="d0">510</data>
+      <data key="d1">311</data>
+    </node>
+    <node id="Node 7">
+      <data key="d0">682</data>
+      <data key="d1">226</data>
+    </node>
+    <node id="Node 8">
+      <data key="d0">625</data>
+      <data key="d1">9</data>
+    </node>
+    <edge source="Node 1" target="Node 2" />
+    <edge source="Node 1" target="Node 8" />
+    <edge source="Node 1" target="Node 6" />
+    <edge source="Node 2" target="Node 3" />
+    <edge source="Node 2" target="Node 5" />
+    <edge source="Node 3" target="Node 4" />
+    <edge source="Node 3" target="Node 8" />
+    <edge source="Node 4" target="Node 5" />
+    <edge source="Node 4" target="Node 7" />
+    <edge source="Node 5" target="Node 6" />
+    <edge source="Node 6" target="Node 7" />
+    <edge source="Node 7" target="Node 8" />
+  </graph>
+</graphml>
