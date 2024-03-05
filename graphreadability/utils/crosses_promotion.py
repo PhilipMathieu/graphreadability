@@ -1,7 +1,5 @@
 import networkx as nx
-import matplotlib.pyplot as plt
-from parse_graph import write_graphml, read_graphml
-import numpy as np
+from utils.helpers import _intersect, compute_intersection
 import copy
 
 
@@ -18,7 +16,7 @@ def crosses_promotion3(G):
             line_a = ((H.nodes[u]['x'], H.nodes[u]['y']), (H.nodes[v]['x'], H.nodes[v]['y']))
             line_b = ((H.nodes[x]['x'], H.nodes[x]['y']), (H.nodes[y]['x'], H.nodes[y]['y']))
 
-            if intersect(line_a, line_b):
+            if _intersect(line_a, line_b):
                 intersection = compute_intersection(line_a[0], line_a[1], line_b[0], line_b[1])
 
                 new_node = "c" + str(len(H.nodes()) + 1)                
@@ -72,7 +70,7 @@ def crosses_promotion2(G):
             line_a = ((H.nodes[u]['x'], H.nodes[u]['y']), (H.nodes[v]['x'], H.nodes[v]['y']))
             line_b = ((H.nodes[x]['x'], H.nodes[x]['y']), (H.nodes[y]['x'], H.nodes[y]['y']))
 
-            if intersect(line_a, line_b):
+            if _intersect(line_a, line_b):
                 intersection = compute_intersection(line_a[0], line_a[1], line_b[0], line_b[1])
 
                 new_node = "c" + str(len(H.nodes()) + len(nodes_to_add) + 1)
@@ -149,7 +147,7 @@ def crosses_promotion(G):
             line_a = ((H.nodes[u]['x'], H.nodes[u]['y']), (H.nodes[v]['x'], H.nodes[v]['y']))
             line_b = ((H.nodes[x]['x'], H.nodes[x]['y']), (H.nodes[y]['x'], H.nodes[y]['y']))
 
-            if intersect(line_a, line_b):
+            if _intersect(line_a, line_b):
                 try:
                     intersection = compute_intersection(line_a[0], line_a[1], line_b[0], line_b[1])
                     if (u, v) not in intersections.keys():
@@ -216,62 +214,6 @@ def crosses_promotion(G):
     return H
 
 
-def compute_intersection(p1, q1, p2, q2):
-    x1, y1 = p1
-    x2, y2 = q1
-    x3, y3 = p2
-    x4, y4 = q2
-    px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4))
-    py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4))
-
-    if px == -0.0:
-        px = 0
-    if py == -0.0:
-        py = 0.0
-    return px, py
-
-
-def on_opposite_sides(a, b, line):
-    """Check if two lines pass the on opposite sides test. Return True if they do."""
-    g = (line[1][0] - line[0][0]) * (a[1] - line[0][1]) - (line[1][1] - line[0][1]) * (a[0] - line[0][0])
-    h = (line[1][0] - line[0][0]) * (b[1] - line[0][1]) - (line[1][1] - line[0][1]) * (b[0] - line[0][0])
-    return g * h <= 0.0 and (a != line[1] and b != line[0] and a != line[0] and b != line[1])
-
-
-def bounding_box(line_a, line_b):
-    """Check if two lines pass the bounding box test. Return True if they do."""
-    x1 = min(line_a[0][0], line_a[1][0])
-    x2 = max(line_a[0][0], line_a[1][0])
-    x3 = min(line_b[0][0], line_b[1][0])
-    x4 = max(line_b[0][0], line_b[1][0])
-
-    y1 = min(line_a[0][1], line_a[1][1])
-    y2 = max(line_a[0][1], line_a[1][1])
-    y3 = min(line_b[0][1], line_b[1][1])
-    y4 = max(line_b[0][1], line_b[1][1])
-
-    return x4 >= x1 and y4 >= y1 and x2 >= x3 and y2 >= y3
-
-
-def intersect(line_a, line_b):
-    """Check if two lines intersect by checking the on opposite sides and bounding box 
-    tests. Return True if they do."""
-    return (on_opposite_sides(line_a[0], line_a[1], line_b) and 
-            on_opposite_sides(line_b[0], line_b[1], line_a) and 
-            bounding_box(line_a, line_b))
-
-
-def draw_graph(G, flip=True):
-
-    if flip:
-        pos={k:np.array((v["x"], 0-float(v["y"])),dtype=np.float32) for (k, v) in[u for u in G.nodes(data=True)]}
-    else:
-        pos={k:np.array((v["x"], v["y"]),dtype=np.float32) for (k, v) in[u for u in G.nodes(data=True)]}
-
-    nx.draw(G, pos=pos, with_labels=True)
-    plt.show()
-
-
 def count_crossings(G):
 
     covered = []
@@ -290,36 +232,13 @@ def count_crossings(G):
             b_p2 = (G.nodes[e2[1]]["x"], G.nodes[e2[1]]["y"]) # Position of target node of e2
             line_b = (b_p1, b_p2)
             
-            if intersect(line_a, line_b) and (line_a, line_b) not in covered:
+            if _intersect(line_a, line_b) and (line_a, line_b) not in covered:
                 covered.append((line_b, line_a))                  
                 c += 1
     return c
 
 def main():
-    G = nx.read_gml("HOLA_SBM_i1_n110_m326.gml", label=None)
-
-    for n in G.nodes():
-        G.nodes[n]['x'] = G.nodes[n]['graphics']['x']
-        G.nodes[n]['y'] = G.nodes[n]['graphics']['y']
-
-
-    from bends_promotion import new_bends_promotion
-    H = new_bends_promotion(G)
-
-    mapping = {}
-    ind = 0
-    for n in H.nodes():
-        mapping[n] = ind
-        H.nodes[n]['x'] = H.nodes[n]['graphics']['x']
-        H.nodes[n]['y'] = H.nodes[n]['graphics']['y']
-        ind += 1
-
-    H = nx.relabel_nodes(H, mapping)
-
-
-    H = crosses_promotion(H)
-
-    write_graphml(H, "out.graphml")
+    pass
 
 
 if __name__ == "__main__":

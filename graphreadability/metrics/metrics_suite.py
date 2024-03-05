@@ -9,7 +9,7 @@ import random as rand
 import math
 from io.graphml_reader import write_graphml
 import time
-import crosses_promotion
+import graphreadability.utils.crosses_promotion as crosses_promotion
 
 from utils.helpers import *
 

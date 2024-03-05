@@ -219,11 +219,8 @@ def _euclidean_distance(a, b):
     return math.sqrt(((b[0] - a[0]) ** 2) + ((b[1] - a[1]) ** 2))
 
 
-def _midpoint(a, b, G=None):
+def _midpoint(a, b, G):
     """Given two nodes and the graph they are in, return the midpoint between them"""
-    if G is None:
-        G = self.graph
-
     x1, y1 = G.nodes[a]["x"], G.nodes[a]["y"]
     x2, y2 = G.nodes[b]["x"], G.nodes[b]["y"]
 
@@ -327,3 +324,17 @@ def draw_graph(G, flip=True, ax=None):
 
     nx.draw(G, pos=pos, ax=ax, with_labels=True)
     plt.show()
+
+def compute_intersection(p1, q1, p2, q2):
+    x1, y1 = p1
+    x2, y2 = q1
+    x3, y3 = p2
+    x4, y4 = q2
+    px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4))
+    py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4))
+
+    if px == -0.0:
+        px = 0
+    if py == -0.0:
+        py = 0.0
+    return px, py
