@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from utils.helpers import draw_graph
+
 # Default image path
 DEFAULT_IMAGE_PATH = "figs/Dunne et al 2015 Figure 1.jpg"
 DEFAULT_FILE_NAME = "graphs/graph.graphml"
@@ -18,7 +20,7 @@ def get_next_id():
 # Check if the node is near an existing node
 def nearby_nodes(nodes, x, y, radius=15):
     for label, node in nodes:
-        if ((node["pos_x"] - x) ** 2 + (node["pos_y"] - y) ** 2) ** 0.5 < radius:
+        if ((node["x"] - x) ** 2 + (node["y"] - y) ** 2) ** 0.5 < radius:
             return label, node
     return None, None
 
@@ -95,7 +97,7 @@ def main(args):
                 else:
                     # Add a new node
                     label = get_next_id()
-                    nodes.append((label, {"pos_x": x, "pos_y": y}))
+                    nodes.append((label, {"x": x, "y": y}))
                     print(f"Added node {label} at ({x}, {y})")
                     # Update the plot
                     ax.scatter(x, y, color="r")
@@ -109,21 +111,21 @@ def main(args):
                     edges.append((EDGE_START[0], label))
                     # Update the plot
                     ax.plot(
-                        [EDGE_START[1]["pos_x"], existing_node["pos_x"]],
-                        [EDGE_START[1]["pos_y"], existing_node["pos_y"]],
+                        [EDGE_START[1]["x"], existing_node["x"]],
+                        [EDGE_START[1]["y"], existing_node["y"]],
                         color="b",
                     )
                     plt.draw()
                 else:
                     # Add a node and complete the edge
                     label = get_next_id()
-                    nodes.append((label, {"pos_x": x, "pos_y": y}))
+                    nodes.append((label, {"x": x, "y": y}))
                     print(f"Added node {label} at ({x}, {y})")
                     edges.append((EDGE_START[0], label))
                     # Update the plot
                     ax.plot(
-                        [EDGE_START[1]["pos_x"], x],
-                        [EDGE_START[1]["pos_y"], y],
+                        [EDGE_START[1]["x"], x],
+                        [EDGE_START[1]["y"], y],
                         color="b",
                     )
                     ax.scatter(x, y, color="r")
@@ -157,12 +159,12 @@ def main(args):
                 ax.cla()
                 ax.imshow(img)
                 for _, node in nodes.items():
-                    ax.scatter(node["pos_x"], node["pos_y"], color="r")
-                    ax.annotate(node["label"], (node["pos_x"], node["pos_y"]))
+                    ax.scatter(node["x"], node["y"], color="r")
+                    ax.annotate(node["label"], (node["x"], node["y"]))
                 for edge in edges:
                     ax.plot(
-                        [edge[0]["pos_x"], edge[1]["pos_x"]],
-                        [edge[0]["pos_y"], edge[1]["pos_y"]],
+                        [edge[0]["x"], edge[1]["x"]],
+                        [edge[0]["y"], edge[1]["y"]],
                         color="b",
                     )
                 plt.draw()
@@ -197,19 +199,8 @@ def main(args):
 
     # Display the graph with networkx
     plt.clf()
-    x = nx.get_node_attributes(G, "pos_x")
-    y = nx.get_node_attributes(G, "pos_y")
-    pos = {k: (x[k], y[k]) for k in x}
-    nx.draw(
-        G,
-        pos=pos,
-        node_size=100,
-        with_labels=True,
-    )
-    # Reverse the y-axis to match the image
-    plt.gca().invert_yaxis()
+    draw_graph(G, ax=ax)
     ax.set_title("Captured Graph")
-    plt.show()
 
     # Disconnect event handler when plot is closed
     plt.disconnect(qid)

@@ -309,7 +309,7 @@ def _intersect(line_a, line_b):
     )
 
 
-def draw_graph(G, flip=True):
+def draw_graph(G, flip=True, ax=None):
     """Draws the graph using standard NetworkX methods with matplotlib. Due to the nature of the coordinate systems used,
     graphs will be flipped on the X axis. To see the graph the way it would be drawn in yEd, set flip to True (default=True).
     """
@@ -325,5 +325,5 @@ def draw_graph(G, flip=True):
             for (k, v) in [u for u in G.nodes(data=True)]
         }
 
-    nx.draw(G, pos=pos, with_labels=True)
+    nx.draw(G, pos=pos, ax=ax, with_labels=True)
     plt.show()
