@@ -1,0 +1,16 @@
+name: graphreadability
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - networkx=2
+  - numpy=1.23
+  - matplotlib=3.6
+  - ipykernel
+  - ca-certificates
+  - certifi
+  - openssl
+  - ipympl
+  - scipy
+prefix: /home/philip/miniconda3/envs/graphreadability
