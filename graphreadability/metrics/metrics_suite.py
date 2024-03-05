@@ -7,7 +7,7 @@ from scipy.spatial import ConvexHull
 import numpy as np
 import random as rand
 import math
-from parse_graph import write_graphml_pos
+from io.graphml_reader import write_graphml
 import time
 import crosses_promotion
 
@@ -182,72 +182,6 @@ class MetricsSuite:
         nx.set_node_attributes(G, pos)
         return G
 
-    def load_graph(self, filename, file_type="GraphML"):
-        """Loads a graph from a file."""
-
-        if not (
-            filename.lower().endswith("gml") or filename.lower().endswith("graphml")
-        ):
-            raise Exception("Filetype must be GraphML.")
-
-        # Accounts for some files which are actually GML files, but have the GraphML extension
-        with open(filename) as f:
-            first_line = f.readline()
-            if first_line.startswith("graph"):
-                file_type = "GML"
-
-        if file_type == "GML":
-            G = nx.read_gml(filename)
-            for node in G.nodes:
-                try:
-                    # Assign node attrbiutes for coordinate position of nodes
-                    G.nodes[node]["x"] = float(G.nodes[node]["graphics"]["x"])
-                    G.nodes[node]["y"] = float(G.nodes[node]["graphics"]["y"])
-
-                except KeyError:
-                    # Graph doesn't have positional attributes
-                    # print("Graph does not contain positional attributes. Assigning them randomly.")
-                    pos = nx.random_layout(G)
-                    for k, v in pos.items():
-                        pos[k] = {
-                            "x": v[0] * G.number_of_nodes() * 20,
-                            "y": v[1] * G.number_of_nodes() * 20,
-                        }
-
-                    nx.set_node_attributes(G, pos)
-
-        elif file_type == "GraphML":
-
-            G = nx.read_graphml(filename)
-            G = G.to_undirected()
-
-            for node in G.nodes:
-                try:
-                    # Assign node attrbiutes for coordinate position of nodes
-                    G.nodes[node]["x"] = float(G.nodes[node]["x"])
-                    G.nodes[node]["y"] = float(G.nodes[node]["y"])
-
-                except KeyError:
-                    # Graph doesn't have positional attributes
-                    # print("Graph does not contain positional attributes. Assigning them randomly.")
-                    pos = nx.random_layout(G)
-                    for k, v in pos.items():
-                        pos[k] = {
-                            "x": v[0] * G.number_of_nodes() * 20,
-                            "y": v[1] * G.number_of_nodes() * 20,
-                        }
-
-                    nx.set_node_attributes(G, pos)
-
-        return G
-
-    def write_graph_no_pos(self, filename, graph=None):
-        """Writes a graph without preserving any information about node position."""
-        if graph is None:
-            graph = self.graph
-
-        nx.write_graphml(graph, filename, named_key_ids=True)
-
     def write_graph(self, filename, graph=None, scale=False):
         """Writes a graph to GraphML format. May not preserve ALL attributes of a graph loaded from GraphML, but will save position of nodes."""
         if graph is None:
@@ -268,7 +202,7 @@ class MetricsSuite:
                     graph.nodes[node]["x"] *= 750
                     graph.nodes[node]["y"] *= 750
 
-        write_graphml_pos(graph, filename)
+        write_graphml(graph, filename)
 
     def calculate_metric(self, metric):
         """Calculate the value of the given metric by calling the associated function."""
