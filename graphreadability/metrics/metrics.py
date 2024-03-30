@@ -11,7 +11,6 @@ from ..utils import crosses_promotion
 
 
 def count_impossible_triangle_crossings(G):
-
     triangles = []
     for u, v in G.edges():
         for t in G.neighbors(u):
@@ -99,69 +98,82 @@ def count_impossible_triangle_crossings(G):
 
     return total_impossible + (num_4_cycles // 4)
 
+def calculate_edge_crossings(G):
+        crossings = set()
+        angles = {}
+        edges_checked = set()
+        edge_crossings = {edge: {"count": 0, "angles": []} for edge in G.edges}
 
-def edge_crossing(G):
+        for edge1 in G.edges:
+            for edge2 in G.edges:
+                if edge1 != edge2 and (edge2, edge1) not in edges_checked:
+                    edges_checked.add((edge1, edge2))
+                    line_a = (
+                        (G.nodes[edge1[0]]["x"], G.nodes[edge1[0]]["y"]),
+                        (G.nodes[edge1[1]]["x"], G.nodes[edge1[1]]["y"]),
+                    )
+                    line_b = (
+                        (G.nodes[edge2[0]]["x"], G.nodes[edge2[0]]["y"]),
+                        (G.nodes[edge2[1]]["x"], G.nodes[edge2[1]]["y"]),
+                    )
+                    # Skip edges that share a node
+                    if len(set(line_a) & set(line_b)) > 0:
+                        continue
+                    if helpers._intersect(line_a, line_b):
+                        crossings.add((edge1, edge2))
+                        # Calculate angle between edges
+                        v1 = helpers.edge_vector(line_a)
+                        v2 = helpers.edge_vector(line_b)
+                        angle = helpers.calculate_angle_between_vectors(v1, v2)
+                        angles[edge1, edge2] = angle
+                        edge_crossings[edge1]["count"] += 1
+                        edge_crossings[edge2]["count"] += 1
+                        edge_crossings[edge1]["angles"].append(angle)
+                        edge_crossings[edge2]["angles"].append(angle)
+
+        # Save edge crossings to edge data
+        nx.set_edge_attributes(G, edge_crossings, "edge_crossings")
+        return crossings
+
+def edge_crossing(G, verbose=False):
     """Calculate the metric for the number of edge_crossing, scaled against the total
     number of possible crossings."""
-
-    import edge_crossing_metric as ec
-
-    new_ec, c = ec.edge_crossing(self.graph)
-    self.metrics["edge_crossing"]["num_crossings"] = c
-    return new_ec
-
     # Estimate for the upper bound for the number of edge crossings
-    # m = self.graph.number_of_edges()
-    # c_all = (m * (m - 1))/2
+    m =  G.number_of_edges()
+    c_all = (m * (m - 1))/2
 
-    # c_impossible = sum([(self.graph.degree[u] * (self.graph.degree[u] - 1)) for u in self.graph])/2
+    degree = np.array([degree[1] for degree in G.degree()])
+    c_impossible = np.dot(degree, degree - 1) / 2
 
-    # c_mx = c_all - c_impossible - self.count_impossible_triangle_crossings(self.graph)
+    c_mx = c_all - c_impossible
 
-    # c_tri = self.count_impossible_triangle_crossings2()
+    c_tri = count_impossible_triangle_crossings(G)
 
-    # c_mx_no_tri = c_all - c_tri
+    c_mx_no_tri = c_all - c_tri
 
-    # c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
+    c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
 
-    # print(f"Total Upper bound: {c_all}")
-    # print(f"Impossible by degree: {c_impossible}")
-    # print(f"Impossible by triangle: {c_tri}")
-    # print(f"Upper bound removing degree: {c_mx}")
-    # print(f"Upper bound removing triangles: {c_mx_no_tri}")
-    # print(f"Upper bound removing degree and triangles: {c_mx_no_tri_no_deg}")
+    if verbose:
+        print(f"Total Upper bound: {c_all:.0f}")
+        print(f"Impossible by degree: {c_impossible:.0f}")
+        print(f"Impossible by triangle: {c_tri:.0f}")
+        print(f"Upper bound removing degree: {c_mx:.0f}")
+        print(f"Upper bound removing triangles: {c_mx_no_tri:.0f}")
+        print(f"Upper bound removing degree and triangles: {c_mx_no_tri_no_deg:.0f}")
 
-    # covered = []
-    # c = 0
-    # # Iterate over all pairs of edges, checking if they intersect
-    # for e in self.graph.edges:
+    # Check if graph edges have edge_crossings attribute
+    if not nx.get_edge_attributes(G, "edge_crossings"):
+        calculate_edge_crossings(G)
 
-    #     a_p1 = (self.graph.nodes[e[0]]["x"], self.graph.nodes[e[0]]["y"]) # Position of source node of e
-    #     a_p2 = (self.graph.nodes[e[1]]["x"], self.graph.nodes[e[1]]["y"]) # Position of target node of e
-    #     line_a = (a_p1, a_p2)
+    c = np.sum([crossing["count"] for crossing in nx.get_edge_attributes(G, "edge_crossings").values()]) / 2 # Each crossing is counted twice
 
-    #     for e2 in self.graph.edges:
-    #         if e == e2:
-    #             continue
+    if verbose:
+        print(f"Num Crossings: {c}")
+        print(f"Original EC: {1 - (c / c_mx) if c_mx > 0 else 1}")
+        print(f"EC without triangles: {1 - (c / c_mx_no_tri) if c_mx_no_tri > 0 else 1}")
+        print(f"EC without triangles and degrees: {1 - (c / c_mx_no_tri_no_deg) if c_mx_no_tri_no_deg > 0 else 1}")
 
-    #         b_p1 = (self.graph.nodes[e2[0]]["x"], self.graph.nodes[e2[0]]["y"]) # Position of source node of e2
-    #         b_p2 = (self.graph.nodes[e2[1]]["x"], self.graph.nodes[e2[1]]["y"]) # Position of target node of e2
-    #         line_b = (b_p1, b_p2)
-
-    #         if self._intersect(line_a, line_b) and (line_a, line_b) not in covered:
-    #             covered.append((line_b, line_a))
-    #             c += 1
-
-    # print(f"Num Crossings: {c}")
-    # print(f"Original EC: {1 - (c / c_mx) if c_mx > 0 else 1}")
-    # print(f"EC without triangles: {1 - (c / c_mx_no_tri) if c_mx_no_tri > 0 else 1}")
-    # print(f"EC without triangles and degrees: {1 - (c / c_mx_no_tri_no_deg) if c_mx_no_tri_no_deg > 0 else 1}")
-
-    # self.metrics["edge_crossing"]["num_crossings"] = c
-    # return 1 - (c / c_mx) if c_mx > 0 else 1
-
-
-# NOTE: Replaced by self.metrics["edge_Crossing"]["num_crossings"] in edge_Crossing function
+    return 1 - helpers.divide_or_zero(c, c_mx)
 
 
 def edge_orthogonality(G):
@@ -232,8 +244,20 @@ def angular_resolution(G, all_nodes=False):
         else 1 - (angles_sum / nodes_count)
     )
 
+def crossing_angle(G):
+     # Check if graph edges have edge_crossings attribute
+    if not nx.get_edge_attributes(G, "edge_crossings"):
+        calculate_edge_crossings(G)
 
-def crossing_angle(G, crossing_limit=1e6):
+    edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
+
+    angles_sum = 0
+    for crossing in edge_crossings.values():
+        ideal = 180 / (crossing["count"] + 1) # Each crossing adds an additional edge, so the ideal angle is 180 / (count + 1)
+        angles_sum += sum([abs((ideal - angle) % ideal) / ideal for angle in crossing["angles"]])
+    return 1 - helpers.divide_or_zero(angles_sum, len(edge_crossings))
+
+def crossing_angle_old(G, crossing_limit=1e6):
     """Calculate the metric for the edge crossings angle. crossing_limit specifies the maximum number of crossings allowed,
     which is limited due to long execution times."""
 
@@ -436,7 +460,7 @@ def gabriel_ratio(G):
         b = G.nodes[edge[1]]["x"], G.nodes[edge[1]]["y"]
 
         r = helpers._euclidean_distance(a, b) / 2
-        center_x, center_y = helpers._midpoint(edge[0], edge[1])
+        center_x, center_y = helpers._midpoint(edge[0], edge[1], G)
 
         # Check if any nodes fall with within the circle and increment the counter if they do
         for node in G.nodes:
@@ -575,9 +599,9 @@ def node_uniformity(G):
                 )
                 # print(square)
                 if helpers._is_point_inside_square(
-                    point,
-                    (square[0][0], square[0][1]),
-                    (square[1][0], square[1][1]),
+                    *point,
+                    square[0][0], square[0][1],
+                    square[1][0], square[1][1],
                 ):
                     grid[i][j] += 1
 
@@ -592,7 +616,7 @@ def node_uniformity(G):
 def neighbourhood_preservation(G, k=None):
 
     if k == None:
-        k = np.floor(helpers.avg_degree(G))
+        k = np.floor(helpers.avg_degree(G)).astype(int)
 
     adj = nx.to_numpy_array(G)
 

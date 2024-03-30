@@ -1,6 +1,6 @@
 import math
 import time
-from typing import Optional, Union, List
+from typing import Optional, Union, Sequence
 from collections import defaultdict
 import networkx as nx
 
@@ -11,10 +11,12 @@ class MetricsSuite:
     Takes as an argument a path to a GML or GraphML file, or a NetworkX Graph object. Also takes as an argument a dictionary of metric:weight key/values.
     Note: to prevent unnecessary calculations, omit metrics with weight 0."""
 
+    DEFAULT_WEIGHTS = {"edge_crossing": 1, "edge_orthogonality": 1, "node_orthogonality": 1, "angular_resolution": 1, "symmetry": 1, "node_resolution": 1, "edge_length": 1, "gabriel_ratio": 1, "crossing_angle": 1, "stress": 1, "neighbourhood_preservation": 1, "aspect_ratio": 1, "node_uniformity": 1}
+
     def __init__(
         self,
         graph: Union[nx.Graph, str] = None,
-        metric_weights: Optional[dict] = None,
+        metric_weights: Optional[dict] = DEFAULT_WEIGHTS,
         metric_combination_strategy: str = "weighted_sum",
         sym_threshold: Union[int, float] = 2,
         sym_tolerance: Union[int, float] = 3,
@@ -22,13 +24,13 @@ class MetricsSuite:
     ):
         # Dictionary mapping metric combination strategies to their functions
         self.metric_combination_strategies = {
-            "weighted_sum": self._weighted_sum,
-            "weighted_prod": self._weighted_prod,
+            "weighted_sum": self.weighted_sum,
+            "weighted_prod": self.weighted_prod,
         }
         # Placeholder for version of graph with crosses promoted to nodes
         self.graph_cross_promoted = None
         # Dictionary mapping metric names to their functions, values, and weights
-        self.metrics = defaultdict(lambda: {"func": None, "value": None, "weight": 0}, {
+        self.metrics = {
             "edge_crossing": {"func": edge_crossing, "num_crossings": None},
             "edge_orthogonality": {"func": edge_orthogonality},
             "node_orthogonality": {"func": node_orthogonality},
@@ -42,13 +44,12 @@ class MetricsSuite:
             "neighbourhood_preservation": {"func": neighbourhood_preservation},
             "aspect_ratio": {"func": aspect_ratio},
             "node_uniformity": {"func": node_uniformity},
-        })
+        }
+        for k in self.metrics.keys():
+            self.metrics[k].update({"weight":0, "value": None, "is_calculated": False})
 
         # Check all metrics given are valid and assign weights
-        if metric_weights:
-            self.initial_weights = self.set_weights(metric_weights)
-        else:
-            self.initial_weights = {"edge_crossing": 1}
+        self.initial_weights = self.set_weights(metric_weights)
 
         # Check metric combination strategy is valid
         assert (
@@ -57,18 +58,19 @@ class MetricsSuite:
         self.metric_combination_strategy = metric_combination_strategy
 
         if graph is None:
-            self.graph = self.load_graph_test()
+            self._filename = ""
+            self._graph = self.load_graph_test()
         elif isinstance(graph, str):
-            self.fname = graph
-            self.graph = self.load_graph(graph, file_type=file_type)
+            self._filename = graph
+            self._graph = self.load_graph(graph, file_type=file_type)
         elif isinstance(graph, nx.Graph):
-            self.fname = ""
-            self.graph = graph
+            self._filename = ""
+            self._graph = graph
         else:
             raise TypeError(
                 f"'graph' must be a string representing a path to a GML or GraphML file, or a NetworkX Graph object, not {type(graph)}"
             )
-
+        
         if sym_tolerance < 0:
             raise ValueError(f"sym_tolerance must be positive.")
 
@@ -79,7 +81,7 @@ class MetricsSuite:
 
         self.sym_threshold = sym_threshold
 
-    def set_weights(self, metric_weights: List[int, float]):
+    def set_weights(self, metric_weights: Sequence[float]):
         metrics_to_remove = [metric for metric, weight in metric_weights.items() if weight <= 0]
 
         if any(metric_weights[metric] < 0 for metric in metric_weights):
@@ -88,18 +90,19 @@ class MetricsSuite:
         for metric in metrics_to_remove:
             metric_weights.pop(metric)
 
-        self.metrics.update({metric: {"weight": weight} for metric, weight in metric_weights.items() if weight > 0})
+        for metric in metric_weights:
+            self.metrics[metric]["weight"] = metric_weights[metric]
 
         return {metric: weight for metric, weight in metric_weights.items() if weight > 0}
     
-    def _weighted_prod(self):
+    def weighted_prod(self):
         """Returns the weighted product of all metrics. Should NOT be used as a cost function - may be useful for comparing graphs."""
         return math.prod(
             self.metrics[metric]["value"] * self.metrics[metric]["weight"]
             for metric in self.initial_weights
         )
 
-    def _weighted_sum(self):
+    def weighted_sum(self):
         """Returns the weighted sum of all metrics. Can be used as a cost function."""
         total_weight = sum(self.metrics[metric]["weight"] for metric in self.metrics)
         return (
@@ -120,18 +123,33 @@ class MetricsSuite:
         nx.set_node_attributes(G, pos)
         return G
     
-    def calculate_metric(self, metric: str):
+    def reset_metrics(self):
+        for metric in self.metrics:
+            self.metrics[metric]["value"] = None
+            self.metrics[metric]["is_calculated"] = False
+    
+    def calculate_metric(self, metric: str = None):
         """Calculate the value of the given metric by calling the associated function."""
-        self.metrics[metric]["value"] = self.metrics[metric]["func"](self.graph)
+        if metric is None:
+            raise ValueError("No metric provided. Did you mean to call calculate_metrics()?")
+        
+        if not self.metrics[metric]["is_calculated"]:
+            self.metrics[metric]["value"] = self.metrics[metric]["func"](self._graph)
+            self.metrics[metric]["is_calculated"] = True
+        else:
+            pass
+            # print(f"Metric {metric} already calculated. Skipping.")
 
     def calculate_metrics(self):
         """Calculates the values of all metrics with non-zero weights."""
         start_time = time.perf_counter()
+        n_metrics = 0
         for metric in self.metrics:
             if self.metrics[metric]["weight"] != 0:
                 self.calculate_metric(metric)
+                n_metrics += 1
         end_time = time.perf_counter()
-        print(f"Metrics calculation took: {end_time - start_time}")
+        print(f"Calculated {n_metrics} metrics in {end_time - start_time:0.3f} seconds.")
 
     def combine_metrics(self):
         """Combine several metrics based on the given multiple criteria decision analysis technique."""
@@ -141,15 +159,25 @@ class MetricsSuite:
 
     def pretty_print_metrics(self):
         """Prints all metrics and their values in an easily digestible view."""
-        print("-" * 40)
-        print("{:<20s}Value\tWeight".format("Metric"))
-        print("-" * 40)
+        combined = self.combine_metrics()
+        print("-" * 50)
+        print("{:<30s}Value\tWeight".format("Metric"))
+        print("-" * 50)
         for k, v in self.metrics.items():
             if v["value"]:
                 val_str = f"{v['value']:.3f}"
-                print(f"{k:<20s}{val_str:<5s}\t{v['weight']}")
+                print(f"{k:<30s}{val_str:<5s}\t{v['weight']}")
             else:
-                print(f"{k:<20s}{str(v['value']):<5s}\t{v['weight']}")
-        print("-" * 40)
-        print(f"Evaluation using {self.metric_combination_strategy}: {self.combine_metrics():.5f}")
-        print("-" * 40)
+                print(f"{k:<30s}{str(v['value']):<5s}\t{v['weight']}")
+        print("-" * 50)
+        print(f"Evaluation using {self.metric_combination_strategy}: {combined:.5f}")
+        print("-" * 50)
+
+    def metric_table(self):
+        """Returns a dictionary of metrics and their values. Designed to work with pandas from_records() method."""
+        combined = self.combine_metrics()
+        metrics = {}
+        for k, v in self.metrics.items():
+            metrics[k] = v["value"]
+        metrics["Combined"] = combined
+        return metrics

@@ -126,7 +126,7 @@ class ReadabilityGraph(nx.Graph):
         m = len(self.edges)
         c_all = m * (m - 1) / 2
         degree = np.array([degree[1] for degree in self.degree()])
-        c_impossible = 0.5 * np.dot(degree, degree - 1)
+        c_impossible = np.dot(degree, degree - 1) / 2
         c_max = c_all - c_impossible
 
         return 1 - divide_or_zero(c, c_max)

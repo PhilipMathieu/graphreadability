@@ -2,11 +2,6 @@ import networkx as nx
 from .helpers import _intersect, compute_intersection
 
 
-def _is_minor(node, G):
-    """Returns True if a node was created by crosses promotion."""
-    return G.nodes[node]["type"] == "minor"
-
-
 def crosses_promotion(G):
     """
     Promote crossings in a graph to nodes, creating a new graph with no edge crossings.

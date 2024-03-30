@@ -22,6 +22,9 @@ def divide_or_zero(
 """
 Functions in this section should work on any number of dimensions, but are primarily used in 2D.
 """
+def edge_vector(edge):
+    """Convert an edge or line to a vector."""
+    return np.array(edge[1]) - np.array(edge[0])
 
 
 def calculate_angle_between_vectors(v1: np.ndarray, v2: np.ndarray) -> float:
@@ -254,7 +257,13 @@ def _check_shared_node_symmetric(P, X, Q, Y, tolerance, G):
     # Check if the distances are the same
     return _same_distance(p, y, tolerance) and _same_distance(q, x, tolerance)
 
-
+def _is_minor(node, G):
+    """Returns True if a node was created by crosses promotion."""
+    try:
+        return G.nodes[node]["type"] == "minor"
+    except KeyError:
+        return False
+    
 def _sym_value(e1, e2, G):
     """Helper function to calculate the level of symmetry between two edges, based on whoch nodes were crosses promoted."""
     # The end nodes of edge1 are P and Q
@@ -294,25 +303,23 @@ def _find_bisectors(G):
 
     # For each pair of nodes
     for n1 in G.nodes:
-        n1_x, n1_y = G.nodes[n1]["x"], G.nodes[n1]["y"]
-
         for n2 in G.nodes:
             if n1 == n2 or (n1, n2) in covered:
                 continue
-
+            n1_x, n1_y = G.nodes[n1]["x"], G.nodes[n1]["y"]
             n2_x, n2_y = G.nodes[n2]["x"], G.nodes[n2]["y"]
 
             # Get the midpoint between the two nodes
             midpoint_x = (n2_x + n1_x) / 2
             midpoint_y = (n2_y + n1_y) / 2
 
-            # Get the gradient of perpendicualr bisector
+            # Get the gradient of perpendicular bisector
             try:
                 initial_gradient = (n2_y - n1_y) / (n2_x - n1_x)
                 perp_gradient = (1 / initial_gradient) * -1
                 c = midpoint_y - (perp_gradient * midpoint_x)
 
-            except:
+            except ZeroDivisionError:
                 if n2_x == n1_x:
                     perp_gradient = "x"
                     c = midpoint_y
@@ -323,10 +330,16 @@ def _find_bisectors(G):
 
             grad_c = (perp_gradient, c)
 
-            bisectors.append(grad_c)
+            # Convert to a pair of points
+            axis = np.array([(0, c), (1, perp_gradient + c)])
+            # Move to midpoint
+            axis[:, 0] += midpoint_x
+            axis[:, 1] += midpoint_y
+
+            bisectors.append(axis)
             covered.append((n2, n1))
 
-    return set(bisectors)  # Set removes duplicates
+    return bisectors
 
 
 def _mirror(axis, e1, e2, G, tolerance=0):
@@ -343,15 +356,19 @@ def _mirror(axis, e1, e2, G, tolerance=0):
     Returns:
     bool: True if the edges are mirrored about the axis, False otherwise.
     """
+
     # Check if the same edge
     if np.array_equal(e1, e2):
         return False
 
-    # If axis is "x" or "y", then the bisector is a vertical or horizontal line
-    if axis == "x":
-        axis = np.array([(0, 0), (0, 1)])
-    elif axis == "y":
-        axis = np.array([(0, 0), (1, 0)])
+    if isinstance(axis, str):
+        # If axis is "x" or "y", then the bisector is a vertical or horizontal line
+        if axis == "x":
+            axis = np.array([(0, 0), (0, 1)])
+        elif axis == "y":
+            axis = np.array([(0, 0), (1, 0)])
+        else:
+            raise ValueError("Axis must be 'x' or 'y' or numpy array.")
 
     # Get the coordinates of the nodes of edge1
     e1_p1 = np.array([G.nodes[e1[0]]["x"], G.nodes[e1[0]]["y"]])
@@ -433,7 +450,7 @@ def pretty_print_nodes(G):
         print(n)
 
 
-def draw_graph(G, flip=True, ax=None):
+def draw_graph(G, flip=True, ax=None, **kwargs):
     """Draws the graph using standard NetworkX methods with matplotlib. Due to the nature of the coordinate systems used,
     graphs will be flipped on the X axis. To see the graph the way it would be drawn in yEd, set flip to True (default=True).
     """
@@ -449,5 +466,4 @@ def draw_graph(G, flip=True, ax=None):
             for (k, v) in [u for u in G.nodes(data=True)]
         }
 
-    nx.draw(G, pos=pos, ax=ax, with_labels=True)
-    plt.show()
+    nx.draw(G, pos=pos, ax=ax, with_labels=True, **kwargs)
