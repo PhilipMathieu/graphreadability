@@ -1,6 +1,7 @@
 import math
 import time
-from typing import Optional, Union
+from typing import Optional, Union, List
+from collections import defaultdict
 import networkx as nx
 
 from ..metrics.metrics import *
@@ -14,20 +15,20 @@ class MetricsSuite:
         self,
         graph: Union[nx.Graph, str] = None,
         metric_weights: Optional[dict] = None,
-        mcdat: str = "weighted_sum",
+        metric_combination_strategy: str = "weighted_sum",
         sym_threshold: Union[int, float] = 2,
         sym_tolerance: Union[int, float] = 3,
         file_type: str = "GraphML",
     ):
         # Dictionary mapping metric combination strategies to their functions
-        self.mcdat_dict = {
+        self.metric_combination_strategies = {
             "weighted_sum": self._weighted_sum,
             "weighted_prod": self._weighted_prod,
         }
         # Placeholder for version of graph with crosses promoted to nodes
         self.graph_cross_promoted = None
         # Dictionary mapping metric names to their functions, values, and weights
-        self.metrics = {
+        self.metrics = defaultdict(lambda: {"func": None, "value": None, "weight": 0}, {
             "edge_crossing": {"func": edge_crossing, "num_crossings": None},
             "edge_orthogonality": {"func": edge_orthogonality},
             "node_orthogonality": {"func": node_orthogonality},
@@ -41,10 +42,7 @@ class MetricsSuite:
             "neighbourhood_preservation": {"func": neighbourhood_preservation},
             "aspect_ratio": {"func": aspect_ratio},
             "node_uniformity": {"func": node_uniformity},
-        }
-        for key, value in self.metrics.items():
-            value["value"] = None
-            value["weight"] = 0
+        })
 
         # Check all metrics given are valid and assign weights
         if metric_weights:
@@ -54,9 +52,9 @@ class MetricsSuite:
 
         # Check metric combination strategy is valid
         assert (
-            mcdat in self.mcdat_dict
-        ), f"Unknown mcdat: {mcdat}. Available mcats: {list(self.mcdat_dict.keys())}"
-        self.mcdat = mcdat
+            metric_combination_strategy in self.metric_combination_strategies
+        ), f"Unknown metric combination strategy: {metric_combination_strategy}. Available strategies: {list(self.metric_combination_strategies.keys())}"
+        self.metric_combination_strategy = metric_combination_strategy
 
         if graph is None:
             self.graph = self.load_graph_test()
@@ -76,50 +74,24 @@ class MetricsSuite:
 
         self.sym_tolerance = sym_tolerance
 
-        if type(sym_threshold) != int and type(sym_threshold) != float:
-            raise TypeError(
-                f"sym_threshold must be a number, not {type(sym_threshold)}"
-            )
-
         if sym_threshold < 0:
             raise ValueError(f"sym_threshold must be positive.")
 
         self.sym_threshold = sym_threshold
 
-    def set_weights(self, metric_weights):
-        metrics_to_remove = []
-        initial_weights = {}
-        for metric in metric_weights:
-            # Check metric is valid
-            assert (
-                metric in self.metrics
-            ), f"Unknown metric: {metric}. Available metrics: {list(self.metrics.keys())}"
-            # Check weight is a number
-            if (
-                type(metric_weights[metric]) != int
-                and type(metric_weights[metric]) != float
-            ):
-                raise TypeError(
-                    f"Metric weights must be a number, not {type(metric_weights[metric])}"
-                )
-            # Check weight is positive
-            if metric_weights[metric] < 0:
-                raise ValueError(f"Metric weights must be positive.")
+    def set_weights(self, metric_weights: List[int, float]):
+        metrics_to_remove = [metric for metric, weight in metric_weights.items() if weight <= 0]
 
-            # Remove metrics with 0 weight
-            if metric_weights[metric] == 0:
-                metrics_to_remove.append(metric)
-            else:
-                # Assign weight to metric
-                self.metrics[metric]["weight"] = metric_weights[metric]
-                initial_weights[metric] = metric_weights[metric]
+        if any(metric_weights[metric] < 0 for metric in metric_weights):
+            raise ValueError("Metric weights must be positive.")
 
-        # Remove 0 weighted metrics
         for metric in metrics_to_remove:
             metric_weights.pop(metric)
 
-        return initial_weights
+        self.metrics.update({metric: {"weight": weight} for metric, weight in metric_weights.items() if weight > 0})
 
+        return {metric: weight for metric, weight in metric_weights.items() if weight > 0}
+    
     def _weighted_prod(self):
         """Returns the weighted product of all metrics. Should NOT be used as a cost function - may be useful for comparing graphs."""
         return math.prod(
@@ -147,41 +119,37 @@ class MetricsSuite:
 
         nx.set_node_attributes(G, pos)
         return G
-
-    def calculate_metric(self, metric):
+    
+    def calculate_metric(self, metric: str):
         """Calculate the value of the given metric by calling the associated function."""
         self.metrics[metric]["value"] = self.metrics[metric]["func"](self.graph)
 
     def calculate_metrics(self):
         """Calculates the values of all metrics with non-zero weights."""
-        t1 = time.time()
+        start_time = time.perf_counter()
         for metric in self.metrics:
             if self.metrics[metric]["weight"] != 0:
                 self.calculate_metric(metric)
-        t2 = time.time()
-        print(f"Took: {t2-t1}")
+        end_time = time.perf_counter()
+        print(f"Metrics calculation took: {end_time - start_time}")
 
     def combine_metrics(self):
-        """Combine several metrics based on the given multiple criteria descision analysis technique."""
+        """Combine several metrics based on the given multiple criteria decision analysis technique."""
         # Important to loop over initial weights to avoid checking the weight of all metrics when they are not needed
-        for metric in self.initial_weights:
-            self.calculate_metric(metric)
-
-        return self.mcdat_dict[self.mcdat]()
+        [self.calculate_metric(metric) for metric in self.initial_weights]
+        return self.metric_combination_strategies[self.metric_combination_strategy]()
 
     def pretty_print_metrics(self):
         """Prints all metrics and their values in an easily digestible view."""
-        self.calculate_metrics()
         print("-" * 40)
         print("{:<20s}Value\tWeight".format("Metric"))
         print("-" * 40)
         for k, v in self.metrics.items():
-
             if v["value"]:
                 val_str = f"{v['value']:.3f}"
                 print(f"{k:<20s}{val_str:<5s}\t{v['weight']}")
             else:
                 print(f"{k:<20s}{str(v['value']):<5s}\t{v['weight']}")
         print("-" * 40)
-        print(f"Evaluation using {self.mcdat}: {self.combine_metrics():.5f}")
+        print(f"Evaluation using {self.metric_combination_strategy}: {self.combine_metrics():.5f}")
         print("-" * 40)
