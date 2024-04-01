@@ -4,3 +4,6 @@ from .core.readabilitygraph import ReadabilityGraph
 
 from .utils.helpers import *
 from .utils.crosses_promotion import *
+
+# Import tests
+from .tests import *
