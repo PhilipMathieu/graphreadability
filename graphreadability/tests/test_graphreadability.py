@@ -3,7 +3,6 @@ import os
 import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import graphreadability as gr
 
 class TestGraphReadability(unittest.TestCase):

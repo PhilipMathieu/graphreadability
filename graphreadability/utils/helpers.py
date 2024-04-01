@@ -1,8 +1,6 @@
 from scipy.spatial import KDTree
 import numpy as np
 import networkx as nx
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 ### MATH HELPERS ###
