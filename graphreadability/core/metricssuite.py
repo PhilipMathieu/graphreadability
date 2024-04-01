@@ -3,15 +3,21 @@ import time
 from typing import Optional, Union, Sequence
 from collections import defaultdict
 import networkx as nx
+from ..metrics import metrics
 
-from ..metrics.metrics import *
+# Get all the functions in the metrics module
+_metric_functions = [func for func in dir(metrics) if callable(getattr(metrics, func)) and not func.startswith("__")]
+
+# Generate the DEFAULT_WEIGHTS dictionary
+DEFAULT_WEIGHTS = {func: 1 for func in _metric_functions}
+
+# Generate the METRICS dictionary
+METRICS = {func: {"func": getattr(metrics, func)} for func in _metric_functions}
 
 class MetricsSuite:
     """A suite for calculating several metrics for graph drawing aesthetics, as well as methods for combining these into a single cost function.
     Takes as an argument a path to a GML or GraphML file, or a NetworkX Graph object. Also takes as an argument a dictionary of metric:weight key/values.
     Note: to prevent unnecessary calculations, omit metrics with weight 0."""
-
-    DEFAULT_WEIGHTS = {"edge_crossing": 1, "edge_orthogonality": 1, "node_orthogonality": 1, "angular_resolution": 1, "symmetry": 1, "node_resolution": 1, "edge_length": 1, "gabriel_ratio": 1, "crossing_angle": 1, "stress": 1, "neighbourhood_preservation": 1, "aspect_ratio": 1, "node_uniformity": 1}
 
     def __init__(
         self,
@@ -30,24 +36,11 @@ class MetricsSuite:
         # Placeholder for version of graph with crosses promoted to nodes
         self.graph_cross_promoted = None
         # Dictionary mapping metric names to their functions, values, and weights
-        self.metrics = {
-            "edge_crossing": {"func": edge_crossing, "num_crossings": None},
-            "edge_orthogonality": {"func": edge_orthogonality},
-            "node_orthogonality": {"func": node_orthogonality},
-            "angular_resolution": {"func": angular_resolution},
-            "symmetry": {"func": symmetry},
-            "node_resolution": {"func": node_resolution},
-            "edge_length": {"func": edge_length},
-            "gabriel_ratio": {"func": gabriel_ratio},
-            "crossing_angle": {"func": crossing_angle},
-            "stress": {"func": stress},
-            "neighbourhood_preservation": {"func": neighbourhood_preservation},
-            "aspect_ratio": {"func": aspect_ratio},
-            "node_uniformity": {"func": node_uniformity},
-        }
+        self.metrics = METRICS.copy()
         for k in self.metrics.keys():
             self.metrics[k].update({"weight":0, "value": None, "is_calculated": False})
 
+        print(self.metrics)
         # Check all metrics given are valid and assign weights
         self.initial_weights = self.set_weights(metric_weights)
 

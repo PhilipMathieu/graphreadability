@@ -5,12 +5,12 @@ first argument and returns a float. It may also take additional arguments, which
 import random as rand
 import numpy as np
 import networkx as nx
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull as __ConvexHull
 from ..utils import helpers
 from ..utils import crosses_promotion
 
 
-def count_impossible_triangle_crossings(G):
+def __count_impossible_triangle_crossings(G):
     """Count the number of impossible triangle crossings in a graph.
 
     An impossible triangle crossing is a crossing that cannot exist due to the geometry of the triangles involved.
@@ -121,7 +121,7 @@ def count_impossible_triangle_crossings(G):
 
     return total_impossible + (num_4_cycles // 4)
 
-def calculate_edge_crossings(G, save_edge_attributes=True):
+def __calculate_edge_crossings(G, save_edge_attributes=True):
     """Calculate all edge crossings in a graph and save them to the edge data.
 
     Parameters
@@ -206,7 +206,7 @@ def edge_crossing(G, verbose=False):
 
     if verbose:
         # Calculate the number of impossible crossings based on triangle geometry
-        c_tri = count_impossible_triangle_crossings(G)
+        c_tri = __count_impossible_triangle_crossings(G)
         c_mx_no_tri = c_all - c_tri
         c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
         print(f"Total Upper bound: {c_all:.0f}")
@@ -218,7 +218,7 @@ def edge_crossing(G, verbose=False):
 
     # Retrieve the edge crossings from the graph if they have been calculated, otherwise calculate
     if not nx.get_edge_attributes(G, "edge_crossings"):
-        crossings, angles = calculate_edge_crossings(G)
+        crossings, angles = __calculate_edge_crossings(G)
     else:
         edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
         crossings = set()
@@ -363,9 +363,9 @@ def crossing_angle(G, crossing_limit = 1e6):
 
      # Check if graph edges have edge_crossings attribute
     if not nx.get_edge_attributes(G, "edge_crossings"):
-        calculate_edge_crossings(G)
-    else:
-        edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
+       __calculate_edge_crossings(G)
+    
+    edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
 
     angles_sum = 0
     for crossing in edge_crossings.values():
@@ -373,7 +373,7 @@ def crossing_angle(G, crossing_limit = 1e6):
         angles_sum += sum([abs((ideal - angle) % ideal) / ideal for angle in crossing["angles"]])
     return 1 - helpers.divide_or_zero(angles_sum, len(edge_crossings))
 
-def crossing_angle_old(G, crossing_limit=1e6):
+def __crossing_angle_old(G, crossing_limit=1e6):
     """Calculate the metric for the edge crossings angle. crossing_limit specifies the maximum number of crossings allowed,
     which is limited due to long execution times."""
 
@@ -818,7 +818,7 @@ def neighbourhood_preservation(G, k=None):
 
 
 
-def _count_crossings(G, crosses_limit=1e6):
+def __count_crossings(G, crosses_limit=1e6):
     """
     Count the number of edge crossings in a graph.
 
@@ -868,7 +868,7 @@ def symmetry(G=None, num_crossings=None, show_sym=False, crosses_limit=1e6, thre
     """
     Calculate the symmetry metric."""
     if num_crossings is None:
-        num_crossings = _count_crossings(G, crosses_limit)
+        num_crossings = __count_crossings(G, crosses_limit)
 
     axes = helpers._find_bisectors(G)
 
@@ -904,7 +904,7 @@ def symmetry(G=None, num_crossings=None, show_sym=False, crosses_limit=1e6, thre
                 break
 
             # Add area of local symmetry to total area and add to total symmetry
-            conv_hull = ConvexHull(points, qhull_options="QJ")
+            conv_hull = __ConvexHull(points, qhull_options="QJ")
             sub_area = conv_hull.volume
             total_area += sub_area
 
@@ -924,7 +924,7 @@ def symmetry(G=None, num_crossings=None, show_sym=False, crosses_limit=1e6, thre
     # Get the are of the convex hull of the graph
     whole_area_points = helpers._graph_to_points(G)
 
-    whole_hull = ConvexHull(whole_area_points)
+    whole_hull = __ConvexHull(whole_area_points)
     whole_area = whole_hull.volume
 
     # Return the symmetry weighted against either the area of the convex hull of the graph or the combined area of all local symmetries
