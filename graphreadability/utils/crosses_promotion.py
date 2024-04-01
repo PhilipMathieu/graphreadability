@@ -57,7 +57,7 @@ def crosses_promotion(G):
                     intersections[(x, y)].append(
                         (intersection[0], intersection[1])
                     )  # Add the intersection point to the list
-                except:
+                except ZeroDivisionError:
                     pass
 
                 covered.append(((x, y), (u, v)))  # Mark the edges as covered
@@ -75,7 +75,7 @@ def crosses_promotion(G):
             v, key=lambda v: v[0]
         )  # Sort the intersection points by x-coordinate
 
-        if H.nodes[k[0]]['x'] < points[0][0]:
+        if H.nodes[k[0]]["x"] < points[0][0]:
             node_list.append(
                 k[0]
             )  # Add the source node of the original edge to the node list
@@ -108,7 +108,7 @@ def crosses_promotion(G):
                 ]  # Find the existing node with the same coordinates
                 node_list.append(node[0])  # Add the existing node to the node list
 
-        if H.nodes[k[0]]['x'] < points[0][0]:
+        if H.nodes[k[0]]["x"] < points[0][0]:
             node_list.append(
                 k[1]
             )  # Add the target node of the original edge to the node list

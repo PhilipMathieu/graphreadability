@@ -26,6 +26,12 @@ repos:
     rev: 6.1.0
     hooks:
     - id: flake8
+      args:
+        - --ignore=E501,W503,F841,E203
+        # E501: line too long
+        # W503: line break before binary operator
+        # F841: local variable is assigned to but never used
+        # E203: whitespace before ':'
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

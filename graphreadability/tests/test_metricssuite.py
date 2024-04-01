@@ -1,6 +1,8 @@
+import io
 import unittest
 import networkx as nx
 from graphreadability.core.metricssuite import MetricsSuite
+
 
 class TestMetricsSuite(unittest.TestCase):
     def setUp(self):
@@ -10,7 +12,11 @@ class TestMetricsSuite(unittest.TestCase):
 
     def test_set_weights(self):
         metrics_suite = MetricsSuite(graph=self.graph)
-        metric_weights = {"edge_crossing": 1, "edge_orthogonality": 0, "node_orthogonality": 2}
+        metric_weights = {
+            "edge_crossing": 1,
+            "edge_orthogonality": 0,
+            "node_orthogonality": 2,
+        }
         expected_weights = {"edge_crossing": 1, "node_orthogonality": 2}
         weights = metrics_suite.set_weights(metric_weights)
         self.assertEqual(weights, expected_weights)
@@ -60,15 +66,15 @@ class TestMetricsSuite(unittest.TestCase):
         metrics_suite.metrics["node_orthogonality"]["value"] = 0.5
         metrics_suite.metrics["angular_resolution"]["value"] = 0.8
         expected_output = "----------------------------------------\nMetric              Value\tWeight\n----------------------------------------\nedge_crossing       10.000\t1\nnode_orthogonality  0.500\t0\nangular_resolution  0.800\t0\n----------------------------------------\nEvaluation using weighted_sum: 5.00000\n----------------------------------------\n"
-        with captured_output() as (out, err):
+        with unittest.mock.patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
             metrics_suite.pretty_print_metrics()
-        output = out.getvalue()
-        self.assertEqual(output, expected_output)
+            self.assertEqual(mock_stdout.getvalue(), expected_output)
 
     def test_load_graph_test(self):
         metrics_suite = MetricsSuite()
         graph = metrics_suite.load_graph_test()
         self.assertIsInstance(graph, nx.Graph)
+
 
 if __name__ == "__main__":
     unittest.main()

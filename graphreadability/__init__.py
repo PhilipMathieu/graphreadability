@@ -2,8 +2,10 @@
 from .core.metricssuite import MetricsSuite
 from .core.readabilitygraph import ReadabilityGraph
 
-from .utils.helpers import *
-from .utils.crosses_promotion import *
+import utils.helpers as helpers
+import utils.crosses_promotion as crosses_promotion
 
 # Import tests
-from .tests import *
+import tests
+
+__all__ = ["MetricsSuite", "ReadabilityGraph", "helpers", "crosses_promotion", "tests"]

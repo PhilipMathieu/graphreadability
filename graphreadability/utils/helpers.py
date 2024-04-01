@@ -3,7 +3,7 @@ import numpy as np
 import networkx as nx
 
 
-### MATH HELPERS ###
+# MATH HELPERS #
 def _is_positive(x: int | float | np.ndarray) -> bool:
     """Return true if x is positive."""
     return x > 0
@@ -16,10 +16,12 @@ def divide_or_zero(
     return np.divide(a, b, out=np.zeros_like(a, dtype=float), where=b != 0.0)
 
 
-### GEOMETRY HELPERS ###
+# GEOMETRY HELPERS #
 """
 Functions in this section should work on any number of dimensions, but are primarily used in 2D.
 """
+
+
 def edge_vector(edge):
     """Convert an edge or line to a vector."""
     return np.array(edge[1]) - np.array(edge[0])
@@ -144,6 +146,7 @@ def _build_kd_tree(points):
     """Create a KDTree from a set of points."""
     return KDTree(points)
 
+
 def _find_k_nearest_points(p, k, points=None, tree=None):
     """Find the k nearest points to a given point p."""
     # Promote points to numpy array
@@ -211,7 +214,7 @@ def compute_intersection(p1, q1, p2, q2):
     return px, py
 
 
-### NODE HELPERS ###
+# NODE HELPERS #
 """
 Functions in this section are used to determine properties of nodes in a graph. They may assume (when needed):
 1. The graph is a class extending the NetworkX Graph() class.
@@ -219,6 +222,7 @@ Functions in this section are used to determine properties of nodes in a graph. 
 3. The nodes have attributes "width" and "height" which represent their dimensions.
 4. Other parameters are passed as scalers or numpy arrays.
 """
+
 
 def _same_position(n1, n2, G, tolerance=0):
     """Helper function to determine if two nodes are in the same position, with some tolerance."""
@@ -261,13 +265,15 @@ def _check_shared_node_symmetric(P, X, Q, Y, tolerance, G):
     # Check if the distances are the same
     return _same_distance(p, y, tolerance) and _same_distance(q, x, tolerance)
 
+
 def _is_minor(node, G):
     """Returns True if a node was created by crosses promotion."""
     try:
         return G.nodes[node]["type"] == "minor"
     except KeyError:
         return False
-    
+
+
 def _sym_value(e1, e2, G):
     """Helper function to calculate the level of symmetry between two edges, based on whoch nodes were crosses promoted."""
     # The end nodes of edge1 are P and Q
@@ -434,6 +440,7 @@ def _get_bounding_box(G):
     """Helper function to get the bounding box of the graph."""
     points = _graph_to_points(G)
     return _bounding_box(points)
+
 
 def _midpoint(a, b, G):
     """Given two nodes and the graph they are in, return the midpoint between them"""

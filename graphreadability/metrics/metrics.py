@@ -2,6 +2,7 @@
 This module contains all metric functions. A metric should be a function that takes a NetworkX graph as the
 first argument and returns a float. It may also take additional arguments, which should be specified in the docstring.
 """
+
 import random as rand
 import numpy as np
 import networkx as nx
@@ -71,26 +72,26 @@ def __count_impossible_triangle_crossings(G):
 
     for i, triangle in enumerate(triangles):
         u, v, t = triangle
-        for a, b, c in triangles[i+1:]:
+        for a, b, c in triangles[i + 1 :]:
             # Skip the same triangle
             if {u, v, t} == {a, b, c}:
                 continue
 
             # Triangles share an edge
-            if (
-                ({u, v} == {a, b} or {u, v} == {b, c} or {u, v} == {c, a})
-                or ({v, t} == {a, b} or {v, t} == {b, c} or {v, t} == {c, a})
-                or ({t, u} == {a, b} or {t, u} == {b, c} or {t, u} == {c, a})
+            if any(
+                ({u, v} == {a, b} or {u, v} == {b, c} or {u, v} == {c, a}),
+                ({v, t} == {a, b} or {v, t} == {b, c} or {v, t} == {c, a}),
+                ({t, u} == {a, b} or {t, u} == {b, c} or {t, u} == {c, a}),
             ):
 
                 total_impossible += 1
                 continue
 
             # Triangles share a node
-            if (
-                (u == a or u == b or u == c)
-                or (v == a or v == b or v == c)
-                or (t == a or t == b or t == c)
+            if any(
+                (u == a or u == b or u == c),
+                (v == a or v == b or v == c),
+                (t == a or t == b or t == c),
             ):
                 total_impossible += 2
                 continue
@@ -121,6 +122,7 @@ def __count_impossible_triangle_crossings(G):
 
     return total_impossible + (num_4_cycles // 4)
 
+
 def __calculate_edge_crossings(G, save_edge_attributes=True):
     """Calculate all edge crossings in a graph and save them to the edge data.
 
@@ -146,7 +148,7 @@ def __calculate_edge_crossings(G, save_edge_attributes=True):
     # Iterate over all pairs of edges and check for intersections
     edges = list(G.edges)
     for i, edge1 in enumerate(edges):
-        for edge2 in edges[i+1:]:
+        for edge2 in edges[i + 1 :]:
             # Check for intersections
             line_a = (
                 (G.nodes[edge1[0]]["x"], G.nodes[edge1[0]]["y"]),
@@ -177,10 +179,11 @@ def __calculate_edge_crossings(G, save_edge_attributes=True):
         nx.set_edge_attributes(G, edge_crossings, "edge_crossings")
     return crossings, angles
 
+
 def edge_crossing(G, verbose=False):
     """Calculate the metric for the number of edge_crossing, scaled against the total
     number of possible crossings.
-    
+
     Parameters
     ----------
     G : nx.Graph
@@ -194,8 +197,8 @@ def edge_crossing(G, verbose=False):
         The edge crossing metric.
     """
     # Estimate for the upper bound for the number of edge crossings
-    m =  G.number_of_edges()
-    c_all = (m * (m - 1))/2
+    m = G.number_of_edges()
+    c_all = (m * (m - 1)) / 2
 
     # Calculate the number of impossible crossings based on the node degrees
     degree = np.array([degree[1] for degree in G.degree()])
@@ -232,22 +235,26 @@ def edge_crossing(G, verbose=False):
     if verbose:
         print(f"Num Crossings: {c}")
         print(f"Original EC: {1 - (c / c_mx) if c_mx > 0 else 1}")
-        print(f"EC without triangles: {1 - (c / c_mx_no_tri) if c_mx_no_tri > 0 else 1}")
-        print(f"EC without triangles and degrees: {1 - (c / c_mx_no_tri_no_deg) if c_mx_no_tri_no_deg > 0 else 1}")
+        print(
+            f"EC without triangles: {1 - (c / c_mx_no_tri) if c_mx_no_tri > 0 else 1}"
+        )
+        print(
+            f"EC without triangles and degrees: {1 - (c / c_mx_no_tri_no_deg) if c_mx_no_tri_no_deg > 0 else 1}"
+        )
 
     return 1 - helpers.divide_or_zero(c, c_mx)
 
 
 def edge_orthogonality(G):
     """Calculate the metric for edge orthogonality.
-    
+
     Parameters
     ----------
     G : nx.Graph
         The graph to calculate the metric for.
     optimal_angle : float
         The optimal angle for edge orthogonality.
-        
+
     Returns
     -------
     float
@@ -279,10 +286,10 @@ def edge_orthogonality(G):
 
 def angular_resolution(G, all_nodes=False):
     """Calculate the metric for angular resolution.
-    
-    This metric captures how evenly the edges leaving a node are distributed. If all_nodes is True, include 
+
+    This metric captures how evenly the edges leaving a node are distributed. If all_nodes is True, include
     nodes with degree 1, for which the angle will always be perfect.
-    
+
     Parameters
     ----------
     G : nx.Graph
@@ -293,7 +300,7 @@ def angular_resolution(G, all_nodes=False):
     Returns
     -------
     float
-        The angular resolution metric.        
+        The angular resolution metric.
     """
     angles_sum = 0
     nodes_count = 0
@@ -335,10 +342,11 @@ def angular_resolution(G, all_nodes=False):
         else 1 - (angles_sum / nodes_count)
     )
 
-def crossing_angle(G, crossing_limit = 1e6):
+
+def crossing_angle(G, crossing_limit=1e6):
     """Calculate the metric for the edge crossings angle.
-    
-    The edge crossings angle metric compares the angle of a crossing to an ideal angle. crossing_limit specifies 
+
+    The edge crossings angle metric compares the angle of a crossing to an ideal angle. crossing_limit specifies
     the maximum number of crossings allowed, which is limited due to long execution times.
 
     Parameters
@@ -359,19 +367,26 @@ def crossing_angle(G, crossing_limit = 1e6):
         If the number of edges exceeds the crossing limit.
     """
     if G.number_of_edges() > crossing_limit:
-        raise ValueError(f"Number of edges exceeds the crossing limit of {crossing_limit}")
+        raise ValueError(
+            f"Number of edges exceeds the crossing limit of {crossing_limit}"
+        )
 
-     # Check if graph edges have edge_crossings attribute
+    # Check if graph edges have edge_crossings attribute
     if not nx.get_edge_attributes(G, "edge_crossings"):
-       __calculate_edge_crossings(G)
-    
+        __calculate_edge_crossings(G)
+
     edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
 
     angles_sum = 0
     for crossing in edge_crossings.values():
-        ideal = 180 / (crossing["count"] + 1) # Each crossing adds an additional edge, so the ideal angle is 180 / (count + 1)
-        angles_sum += sum([abs((ideal - angle) % ideal) / ideal for angle in crossing["angles"]])
+        ideal = 180 / (
+            crossing["count"] + 1
+        )  # Each crossing adds an additional edge, so the ideal angle is 180 / (count + 1)
+        angles_sum += sum(
+            [abs((ideal - angle) % ideal) / ideal for angle in crossing["angles"]]
+        )
     return 1 - helpers.divide_or_zero(angles_sum, len(edge_crossings))
+
 
 def __crossing_angle_old(G, crossing_limit=1e6):
     """Calculate the metric for the edge crossings angle. crossing_limit specifies the maximum number of crossings allowed,
@@ -497,14 +512,14 @@ def node_orthogonality(G):
 
 def node_resolution(G):
     """Calculate the metric for node resolution.
-    
+
     Node resolution is the ratio of the smallest and largest distance between any pair of nodes.
-    
+
     Parameters
     ----------
     G : nx.Graph
         The graph to calculate the metric for.
-        
+
     Returns
     -------
     float
@@ -539,16 +554,16 @@ def node_resolution(G):
 
 def edge_length(G, ideal_edge_length=None):
     """Calculate the edge length metric.
-    
+
     The edge length metric compares the edge lengths to an ideal length. Default ideal is average of all edge lengths.
-    
+
     Parameters
     ----------
     G : nx.Graph
         The graph to calculate the metric for.
     ideal : float
         The ideal edge length.
-    
+
     Returns
     -------
     float
@@ -582,14 +597,14 @@ def edge_length(G, ideal_edge_length=None):
 
 def gabriel_ratio(G):
     """Calculate the metric for the gabriel ratio.
-    
+
     A graph is a Gabriel graph if no node falls within the area of any circles constructed using each edge as its diameter.
-    
+
     Parameters
     ----------
     G : nx.Graph
         The graph to calculate the metric for.
-        
+
     Returns
     -------
     float
@@ -674,9 +689,10 @@ def stress(G):
 
     np.fill_diagonal(diff, 0)
 
-    stress_func = lambda a: np.sum(
-        np.square(np.divide((a * diff - d), d, out=np.zeros_like(d), where=d != 0))
-    ) / comb(N, 2)
+    def stress_func(a):
+        return np.sum(
+            np.square(np.divide((a * diff - d), d, out=np.zeros_like(d), where=d != 0))
+        ) / comb(N, 2)
 
     from scipy.optimize import minimize_scalar
 
@@ -704,9 +720,9 @@ def aspect_ratio(G):
         The aspect ratio metric.
     """
     bbox = helpers._get_bounding_box(G)
-    
-    width = bbox[1,0] - bbox[0,0]
-    height = bbox[1,1] - bbox[0,1]
+
+    width = bbox[1, 0] - bbox[0, 0]
+    height = bbox[1, 1] - bbox[0, 1]
 
     if width > height:
         return height / width
@@ -755,8 +771,10 @@ def node_uniformity(G):
                 # print(square)
                 if helpers._is_point_inside_square(
                     *point,
-                    square[0][0], square[0][1],
-                    square[1][0], square[1][1],
+                    square[0][0],
+                    square[0][1],
+                    square[1][0],
+                    square[1][1],
                 ):
                     grid[i][j] += 1
 
@@ -771,7 +789,7 @@ def node_uniformity(G):
 def neighbourhood_preservation(G, k=None):
     """Calculate the metric for neighbourhood preservation.
 
-    Neighbourhood preservation is the average of the ratio of the number of neighbors by edges to the number 
+    Neighbourhood preservation is the average of the ratio of the number of neighbors by edges to the number
     of neighbors by k-nearest neighbors. This metric attempts to capture how well the geometry of the graph
     preserves the topology of the graph.
 
@@ -804,9 +822,9 @@ def neighbourhood_preservation(G, k=None):
 
     # Find k nearest neighbours for each node
     for i, u in enumerate(G.nodes()):
-        nearest = helpers._find_k_nearest_points(points[i], k+1, tree=tree)
+        nearest = helpers._find_k_nearest_points(points[i], k + 1, tree=tree)
         for j in nearest[1:]:
-                K[i][j] = 1
+            K[i][j] = 1
 
     # Remove diagonal
     np.fill_diagonal(K, 0)
@@ -815,7 +833,6 @@ def neighbourhood_preservation(G, k=None):
     intersection = np.logical_and(adj, K)
     union = np.logical_or(adj, K)
     return intersection.sum() / union.sum()
-
 
 
 def __count_crossings(G, crosses_limit=1e6):
@@ -843,7 +860,9 @@ def __count_crossings(G, crosses_limit=1e6):
 
         for e2 in G.edges:
             if c > crosses_limit:
-                raise ValueError(f"Number of edge crossings exceeds the limit of {crosses_limit}")
+                raise ValueError(
+                    f"Number of edge crossings exceeds the limit of {crosses_limit}"
+                )
 
             if e == e2:
                 continue  # Skip if the edges are the same
@@ -864,7 +883,15 @@ def __count_crossings(G, crosses_limit=1e6):
 
     return c
 
-def symmetry(G=None, num_crossings=None, show_sym=False, crosses_limit=1e6, threshold=1, tolerance=0.1):
+
+def symmetry(
+    G=None,
+    num_crossings=None,
+    show_sym=False,
+    crosses_limit=1e6,
+    threshold=1,
+    tolerance=0.1,
+):
     """
     Calculate the symmetry metric."""
     if num_crossings is None:

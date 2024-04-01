@@ -1,14 +1,19 @@
 """
 This module is based on:
 
-    C. Dunne, S. I. Ross, B. Shneiderman, and M. Martino, “Readability metric feedback for aiding 
-    node-link visualization designers,” IBM Journal of Research and Development, vol. 59, no. 2/3, 
+    C. Dunne, S. I. Ross, B. Shneiderman, and M. Martino, “Readability metric feedback for aiding
+    node-link visualization designers,” IBM Journal of Research and Development, vol. 59, no. 2/3,
     p. 14:1-14:16, Mar. 2015, doi: 10.1147/JRD.2015.2411412.
 """
 
 import networkx as nx
 import numpy as np
-from graphreadability.utils.helpers import divide_or_zero, lines_intersect, calculate_angle_between_vectors
+from graphreadability.utils.helpers import (
+    divide_or_zero,
+    lines_intersect,
+    calculate_angle_between_vectors,
+)
+
 
 class ReadabilityGraph(nx.Graph):
     def __init__(self, data=None, **attr):
@@ -21,12 +26,12 @@ class ReadabilityGraph(nx.Graph):
             None  # Store computed node overlaps to avoid recomputation
         )
 
-    ### HELPER FUNCTIONS ###
+    # HELPER FUNCTIONS #
     def edge_vector(self, edge):
         """Calculate the vector of an edge given its nodes' positions."""
         pos1, pos2 = self.nodes[edge[0]]["pos"], self.nodes[edge[1]]["pos"]
         return np.array(pos2) - np.array(pos1)
-    
+
     def calculate_edge_crossings(self):
         positions = nx.get_node_attributes(
             self, "pos"
@@ -98,7 +103,7 @@ class ReadabilityGraph(nx.Graph):
 
         return overlaps
 
-    ### METRICS ###
+    # METRICS #
     def node_overlap_global(self):
         # Implement computation for global overlap metric
         pass
