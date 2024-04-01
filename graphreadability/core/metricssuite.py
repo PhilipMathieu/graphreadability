@@ -40,7 +40,6 @@ class MetricsSuite:
         for k in self.metrics.keys():
             self.metrics[k].update({"weight":0, "value": None, "is_calculated": False})
 
-        print(self.metrics)
         # Check all metrics given are valid and assign weights
         self.initial_weights = self.set_weights(metric_weights)
 
