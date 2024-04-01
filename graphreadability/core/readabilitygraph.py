@@ -8,25 +8,7 @@ This module is based on:
 
 import networkx as nx
 import numpy as np
-
-
-def calculate_angle_between_vectors(v1, v2):
-    """Calculate the angle between two vectors."""
-    unit_v1 = v1 / np.linalg.norm(v1)
-    unit_v2 = v2 / np.linalg.norm(v2)
-    dot_product = np.dot(unit_v1, unit_v2)
-    angle = np.arccos(np.clip(dot_product, -1.0, 1.0))
-    return np.degrees(angle)
-
-
-def divide_or_zero(a, b):
-    """Divide a by b, or return 0 if b is 0."""
-    return (
-        np.divide(a, b, out=np.zeros_like(a, dtype=float), where=b != 0.0)
-        if b != 0.0
-        else 0.0
-    )
-
+from graphreadability.utils.helpers import divide_or_zero, lines_intersect, calculate_angle_between_vectors
 
 class ReadabilityGraph(nx.Graph):
     def __init__(self, data=None, **attr):
@@ -44,34 +26,8 @@ class ReadabilityGraph(nx.Graph):
         """Calculate the vector of an edge given its nodes' positions."""
         pos1, pos2 = self.nodes[edge[0]]["pos"], self.nodes[edge[1]]["pos"]
         return np.array(pos2) - np.array(pos1)
-
+    
     def calculate_edge_crossings(self):
-        def lines_intersect(line1, line2):
-            """Check if two lines (each defined by two points) intersect."""
-            p1, p2, p3, p4 = line1[0], line1[1], line2[0], line2[1]
-            # Calculate parts of the determinants
-            det1 = (p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0])
-            det2 = (p1[0] * p2[1] - p1[1] * p2[0]) * (p3[0] - p4[0]) - (
-                p1[0] - p2[0]
-            ) * (p3[0] * p4[1] - p3[1] * p4[0])
-            det3 = (p1[0] * p2[1] - p1[1] * p2[0]) * (p3[1] - p4[1]) - (
-                p1[1] - p2[1]
-            ) * (p3[0] * p4[1] - p3[1] * p4[0])
-            if det1 == 0:
-                return False  # Lines are parallel or coincident
-            x, y = det2 / det1, det3 / det1
-            # Check if intersection point is on both line segments
-            line1_x_range = sorted([p1[0], p2[0]])
-            line1_y_range = sorted([p1[1], p2[1]])
-            line2_x_range = sorted([p3[0], p4[0]])
-            line2_y_range = sorted([p3[1], p4[1]])
-            return (
-                line1_x_range[0] <= x <= line1_x_range[1]
-                and line2_x_range[0] <= x <= line2_x_range[1]
-                and line1_y_range[0] <= y <= line1_y_range[1]
-                and line2_y_range[0] <= y <= line2_y_range[1]
-            )
-
         positions = nx.get_node_attributes(
             self, "pos"
         )  # Assuming 'pos' contains node positions
@@ -170,7 +126,7 @@ class ReadabilityGraph(nx.Graph):
         m = len(self.edges)
         c_all = m * (m - 1) / 2
         degree = np.array([degree[1] for degree in self.degree()])
-        c_impossible = 0.5 * np.dot(degree, degree - 1)
+        c_impossible = np.dot(degree, degree - 1) / 2
         c_max = c_all - c_impossible
 
         return 1 - divide_or_zero(c, c_max)
@@ -254,25 +210,6 @@ class ReadabilityGraph(nx.Graph):
             deviation_max += ideal_angle
 
         return 1 - divide_or_zero(deviation, deviation_max)
-
-    def angular_resolution_min_node(self):
-        pass
-
-    def angular_resolution_min_global(self):
-        pass
-
-    def angular_resolution_dev_node(self):
-        pass
-
-    def angular_resolution_dev_global(self):
-        pass
-
-    def group_overlap(self):
-        pass
-
-    def visualization_coverage(self):
-        # Implement computation for visualization coverage metric
-        pass
 
     def compute_metrics(self):
         # Return a dictionary of all metrics

@@ -1,0 +1,11 @@
+name: gr-min
+channels:
+  - conda-forge
+dependencies:
+  - python=3.7
+  - networkx
+  - numpy
+  - matplotlib
+  - scipy
+  - pandas
+prefix: /home/philip/miniforge/envs/gr-min
