@@ -8,7 +8,7 @@ This module is based on:
 
 import networkx as nx
 import numpy as np
-from graphreadability.utils.helpers import (
+from src.utils.helpers import (
     divide_or_zero,
     lines_intersect,
     calculate_angle_between_vectors,

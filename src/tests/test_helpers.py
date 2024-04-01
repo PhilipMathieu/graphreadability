@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-import graphreadability.utils.helpers as helpers
+import src.utils.helpers as helpers
 import unittest
 
 

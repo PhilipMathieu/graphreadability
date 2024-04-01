@@ -3,7 +3,7 @@ import os
 import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
-import graphreadability as gr
+import src as gr
 
 
 class TestGraphReadability(unittest.TestCase):
