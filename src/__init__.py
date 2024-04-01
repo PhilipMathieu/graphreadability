@@ -1,4 +1,9 @@
-# __init__.py for graphreadability module
+__version__ = "0.0.1"
+__author__ = "Philip Mathieu"
+__license__ = "Apache-2.0"
+__description__ = "A Python package for calculating readability metrics for graph and network visualizations."
+
+# Import core modules
 from .core.metricssuite import MetricsSuite
 from .core.readabilitygraph import ReadabilityGraph
 

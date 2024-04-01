@@ -4,26 +4,27 @@ Python module for applying readability metrics to network and graph visualizatio
 
 ## Usage
 
-The basic functionality of this module is to extend [`networkx`](https://networkx.org/) to introduce the ability to calculate readability metrics. For example, to calculate edge crossings on a simple graph consisting of two pairs of nodes with an "x" of edges:
-
 ```python
-from graphreadability import ReadabilityGraph
+import networkx as nx
+import graphreadability as gr
 
-# Create a graph object which extends networkx.Graph
-G = ReadabilityGraph()
+# Create a basic graph using NetworkX
+G = nx.Graph()
+G.add_nodes_from(
+    [
+        (1, {"x": 1, "y": 1}),
+        (2, {"x": -1, "y": 1}),
+        (3, {"x": -1, "y": -1}),
+        (4, {"x": 1, "y": -1}),
+        (5, {"x": 2, "y": 1}),
+    ]
+)
+G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 2), (1, 3)])
 
-# Create a square of nodes
-graph.add_node("A", pos=(0, 0))
-graph.add_node("B", pos=(1, 1))
-graph.add_node("C", pos=(1, 0))
-graph.add_node("D", pos=(0, 1))
-
-# Add diagonal edges
-graph.add_edge("A", "C")
-graph.add_edge("B", "D")
-
-# Calculate the crossings metric
-crossings = graph.edge_crossings_global()
+# Create a MetricsSuite to calculate readability metrics
+M = gr.MetricsSuite(G)
+M.calculate_metrics()
+M.pretty_print_metrics()
 ```
 
 ## Utilities
@@ -65,4 +66,4 @@ Code in [`graphreadability/metrics/`](graphreadability/metrics/) is in part deri
 
 ## License
 
-All rights reserved for now (likely to be open sourced shortly).
+Apache 2.0 - see [LICENSE.txt](./LICENSE.txt)
