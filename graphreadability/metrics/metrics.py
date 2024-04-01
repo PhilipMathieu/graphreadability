@@ -11,12 +11,31 @@ from ..utils import crosses_promotion
 
 
 def count_impossible_triangle_crossings(G):
+    """Count the number of impossible triangle crossings in a graph.
+
+    An impossible triangle crossing is a crossing that cannot exist due to the geometry of the triangles involved.
+    The most crossings that can occur between two triangles is six. If the two triangles share a node, this number
+    decreases to four. If the two triangles share an edge, this number decreases to two. If the two triangles are the
+    same, this number decreases to zero.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate impossible triangle crossings for.
+
+    Returns
+    -------
+    total_impossible : int
+        The total number of impossible triangle crossings in the graph.
+    """
+    # Create a list of sets of three nodes that form a triangle
     triangles = []
     for u, v in G.edges():
         for t in G.neighbors(u):
             if v in G.neighbors(t) and {u, v, t} not in triangles:
                 triangles.append({u, v, t})
 
+    # Create a list of the edge sets of the triangles
     triangle_edges = []
     for u, v, t in triangles:
         if {u, v} not in triangle_edges:
@@ -26,34 +45,37 @@ def count_impossible_triangle_crossings(G):
         if {t, u} not in triangle_edges:
             triangle_edges.append({t, u})
 
+    # Count the number of impossible triangles
     total_impossible = 0
     for u, v, t in triangles:
+        # Get the edges of the triangle
         bubble = []
         bubble.extend(G.edges(u))
         bubble.extend(G.edges(v))
         bubble.extend(G.edges(t))
 
+        # Create a subgraph of the triangle
         subG = nx.Graph(bubble)
 
+        # Iterate over the edges in the input graph
         for a, b in G.edges():
+            # Skip the edges of the subgraph
             if (a, b) in subG.edges() or (b, a) in subG.edges():
                 continue
 
+            # Skip the edges that are part of a triangle
             if {a, b} in triangle_edges:
                 continue
 
             total_impossible += 1
 
-    covered_triangles = []
-    for u, v, t in triangles:
-        for a, b, c in triangles:
-            if {u, v, t} in covered_triangles or {a, b, c} in covered_triangles:
-                continue
-
+    for i, triangle in enumerate(triangles):
+        u, v, t = triangle
+        for a, b, c in triangles[i+1:]:
+            # Skip the same triangle
             if {u, v, t} == {a, b, c}:
                 continue
 
-            covered_triangles.append({u, v, t})
             # Triangles share an edge
             if (
                 ({u, v} == {a, b} or {u, v} == {b, c} or {u, v} == {c, a})
@@ -73,6 +95,7 @@ def count_impossible_triangle_crossings(G):
                 total_impossible += 2
                 continue
 
+            # All crossings are possible
             total_impossible += 3
 
     num_4_cycles = 0
@@ -98,62 +121,94 @@ def count_impossible_triangle_crossings(G):
 
     return total_impossible + (num_4_cycles // 4)
 
-def calculate_edge_crossings(G):
-        crossings = set()
-        angles = {}
-        edges_checked = set()
+def calculate_edge_crossings(G, save_edge_attributes=True):
+    """Calculate all edge crossings in a graph and save them to the edge data.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate edge crossings for.
+    save_edge_attributes : bool
+        Whether to save the edge crossings to the edge data.
+
+    Returns
+    -------
+    crossings : set((edge1, edge2))
+        A set of all edge crossings in the graph.
+    angles : dict((edge1, edge2), angle)
+        A dictionary of angles between edges.
+    """
+    crossings = set()
+    angles = {}
+    if save_edge_attributes:
         edge_crossings = {edge: {"count": 0, "angles": []} for edge in G.edges}
 
-        for edge1 in G.edges:
-            for edge2 in G.edges:
-                if edge1 != edge2 and (edge2, edge1) not in edges_checked:
-                    edges_checked.add((edge1, edge2))
-                    line_a = (
-                        (G.nodes[edge1[0]]["x"], G.nodes[edge1[0]]["y"]),
-                        (G.nodes[edge1[1]]["x"], G.nodes[edge1[1]]["y"]),
-                    )
-                    line_b = (
-                        (G.nodes[edge2[0]]["x"], G.nodes[edge2[0]]["y"]),
-                        (G.nodes[edge2[1]]["x"], G.nodes[edge2[1]]["y"]),
-                    )
-                    # Skip edges that share a node
-                    if len(set(line_a) & set(line_b)) > 0:
-                        continue
-                    if helpers._intersect(line_a, line_b):
-                        crossings.add((edge1, edge2))
-                        # Calculate angle between edges
-                        v1 = helpers.edge_vector(line_a)
-                        v2 = helpers.edge_vector(line_b)
-                        angle = helpers.calculate_angle_between_vectors(v1, v2)
-                        angles[edge1, edge2] = angle
-                        edge_crossings[edge1]["count"] += 1
-                        edge_crossings[edge2]["count"] += 1
-                        edge_crossings[edge1]["angles"].append(angle)
-                        edge_crossings[edge2]["angles"].append(angle)
+    # Iterate over all pairs of edges and check for intersections
+    edges = list(G.edges)
+    for i, edge1 in enumerate(edges):
+        for edge2 in edges[i+1:]:
+            # Check for intersections
+            line_a = (
+                (G.nodes[edge1[0]]["x"], G.nodes[edge1[0]]["y"]),
+                (G.nodes[edge1[1]]["x"], G.nodes[edge1[1]]["y"]),
+            )
+            line_b = (
+                (G.nodes[edge2[0]]["x"], G.nodes[edge2[0]]["y"]),
+                (G.nodes[edge2[1]]["x"], G.nodes[edge2[1]]["y"]),
+            )
+            # Skip edges that share a node
+            if len(set(line_a) & set(line_b)) > 0:
+                continue
+            if helpers._intersect(line_a, line_b):
+                crossings.add((edge1, edge2))
+                # Calculate angle between edges
+                v1 = helpers.edge_vector(line_a)
+                v2 = helpers.edge_vector(line_b)
+                angle = helpers.calculate_angle_between_vectors(v1, v2)
+                angles[edge1, edge2] = angle
+                if save_edge_attributes:
+                    edge_crossings[edge1]["count"] += 1
+                    edge_crossings[edge2]["count"] += 1
+                    edge_crossings[edge1]["angles"].append(angle)
+                    edge_crossings[edge2]["angles"].append(angle)
 
-        # Save edge crossings to edge data
+    # Save edge crossings to edge data
+    if save_edge_attributes:
         nx.set_edge_attributes(G, edge_crossings, "edge_crossings")
-        return crossings
+    return crossings, angles
 
 def edge_crossing(G, verbose=False):
     """Calculate the metric for the number of edge_crossing, scaled against the total
-    number of possible crossings."""
+    number of possible crossings.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    verbose : bool
+        Whether to print additional information about the metric.
+
+    Returns
+    -------
+    float
+        The edge crossing metric.
+    """
     # Estimate for the upper bound for the number of edge crossings
     m =  G.number_of_edges()
     c_all = (m * (m - 1))/2
 
+    # Calculate the number of impossible crossings based on the node degrees
     degree = np.array([degree[1] for degree in G.degree()])
     c_impossible = np.dot(degree, degree - 1) / 2
 
+    # Calculate the maximum number of possible crossings
     c_mx = c_all - c_impossible
 
-    c_tri = count_impossible_triangle_crossings(G)
-
-    c_mx_no_tri = c_all - c_tri
-
-    c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
-
     if verbose:
+        # Calculate the number of impossible crossings based on triangle geometry
+        c_tri = count_impossible_triangle_crossings(G)
+        c_mx_no_tri = c_all - c_tri
+        c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
         print(f"Total Upper bound: {c_all:.0f}")
         print(f"Impossible by degree: {c_impossible:.0f}")
         print(f"Impossible by triangle: {c_tri:.0f}")
@@ -161,11 +216,18 @@ def edge_crossing(G, verbose=False):
         print(f"Upper bound removing triangles: {c_mx_no_tri:.0f}")
         print(f"Upper bound removing degree and triangles: {c_mx_no_tri_no_deg:.0f}")
 
-    # Check if graph edges have edge_crossings attribute
+    # Retrieve the edge crossings from the graph if they have been calculated, otherwise calculate
     if not nx.get_edge_attributes(G, "edge_crossings"):
-        calculate_edge_crossings(G)
+        crossings, angles = calculate_edge_crossings(G)
+    else:
+        edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
+        crossings = set()
+        for edge, crossing in edge_crossings.items():
+            if crossing["count"] > 0:
+                crossings.add(edge)
 
-    c = np.sum([crossing["count"] for crossing in nx.get_edge_attributes(G, "edge_crossings").values()]) / 2 # Each crossing is counted twice
+    # Calculate the number of edge crossings
+    c = len(crossings)
 
     if verbose:
         print(f"Num Crossings: {c}")
@@ -177,7 +239,20 @@ def edge_crossing(G, verbose=False):
 
 
 def edge_orthogonality(G):
-    """Calculate the metric for edge orthogonality."""
+    """Calculate the metric for edge orthogonality.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    optimal_angle : float
+        The optimal angle for edge orthogonality.
+        
+    Returns
+    -------
+    float
+        The edge orthogonality metric.
+    """
     ortho_list = []
 
     # Iterate over each edge and get it's minimum angle relative to the orthogonal grid
@@ -203,7 +278,23 @@ def edge_orthogonality(G):
 
 
 def angular_resolution(G, all_nodes=False):
-    """Calculate the metric for angular resolution. If all_nodes is True, include nodes with degree 1, for which the angle will always be perfect."""
+    """Calculate the metric for angular resolution.
+    
+    This metric captures how evenly the edges leaving a node are distributed. If all_nodes is True, include 
+    nodes with degree 1, for which the angle will always be perfect.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    all_nodes : bool
+        Whether to include all nodes in the calculation.
+
+    Returns
+    -------
+    float
+        The angular resolution metric.        
+    """
     angles_sum = 0
     nodes_count = 0
     for node in G.nodes:
@@ -244,12 +335,37 @@ def angular_resolution(G, all_nodes=False):
         else 1 - (angles_sum / nodes_count)
     )
 
-def crossing_angle(G):
+def crossing_angle(G, crossing_limit = 1e6):
+    """Calculate the metric for the edge crossings angle.
+    
+    The edge crossings angle metric compares the angle of a crossing to an ideal angle. crossing_limit specifies 
+    the maximum number of crossings allowed, which is limited due to long execution times.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    crossing_limit : int
+        The maximum number of crossings allowed.
+
+    Returns
+    -------
+    float
+        The edge crossings angle metric.
+
+    Raises
+    ------
+    ValueError
+        If the number of edges exceeds the crossing limit.
+    """
+    if G.number_of_edges() > crossing_limit:
+        raise ValueError(f"Number of edges exceeds the crossing limit of {crossing_limit}")
+
      # Check if graph edges have edge_crossings attribute
     if not nx.get_edge_attributes(G, "edge_crossings"):
         calculate_edge_crossings(G)
-
-    edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
+    else:
+        edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
 
     angles_sum = 0
     for crossing in edge_crossings.values():
@@ -380,8 +496,20 @@ def node_orthogonality(G):
 
 
 def node_resolution(G):
-    """Calulate the metric for node resolution, which is the ratio of the smallest and largest distance between any pair of nodes."""
-
+    """Calculate the metric for node resolution.
+    
+    Node resolution is the ratio of the smallest and largest distance between any pair of nodes.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+        
+    Returns
+    -------
+    float
+        The node resolution metric.
+    """
     # Start with two random nodes
     first_node, second_node = rand.sample(list(G.nodes), 2)
     a = G.nodes[first_node]["x"], G.nodes[first_node]["y"]
@@ -391,10 +519,9 @@ def node_resolution(G):
     max_dist = min_dist
 
     # Iterate over every pair of nodes, keeping track of the maximum and minimum distances between them
-    for i in G.nodes:
-        for j in G.nodes:
-            if i == j:
-                continue
+    nodes = list(G.nodes)
+    for idx, i in enumerate(nodes):
+        for j in nodes[idx + 1 :]:
 
             a = G.nodes[i]["x"], G.nodes[i]["y"]
             b = G.nodes[j]["x"], G.nodes[j]["y"]
@@ -410,21 +537,32 @@ def node_resolution(G):
     return min_dist / max_dist
 
 
-def edge_length(G, ideal=None):
-    """Calculate the edge length metric by comparing the edge lengths to an ideal length. Default ideal is average of all edge lengths."""
-
-    ideal_edge_length = 0
-    for edge in G.edges:
-        a = G.nodes[edge[0]]["x"], G.nodes[edge[0]]["y"]
-        b = G.nodes[edge[1]]["x"], G.nodes[edge[1]]["y"]
-
-        ideal_edge_length += helpers._euclidean_distance(a, b)
-
-    if not ideal:
+def edge_length(G, ideal_edge_length=None):
+    """Calculate the edge length metric.
+    
+    The edge length metric compares the edge lengths to an ideal length. Default ideal is average of all edge lengths.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    ideal : float
+        The ideal edge length.
+    
+    Returns
+    -------
+    float
+        The edge length metric.
+    """
+    if not ideal_edge_length:
         # For unweighted graphs, set the ideal edge length to the average edge length
+        ideal_edge_length = 0
+        for edge in G.edges:
+            a = G.nodes[edge[0]]["x"], G.nodes[edge[0]]["y"]
+            b = G.nodes[edge[1]]["x"], G.nodes[edge[1]]["y"]
+
+            ideal_edge_length += helpers._euclidean_distance(a, b)
         ideal_edge_length = ideal_edge_length / G.number_of_edges()
-    else:
-        ideal_edge_length = ideal
 
     edge_length_sum = 0
     for edge in G.edges:
@@ -443,7 +581,20 @@ def edge_length(G, ideal=None):
 
 
 def gabriel_ratio(G):
-    """Calculate the metric for the gabriel ratio. A graph is a Gabriel graph if no node falls within the area of any circles constructed using each edge as its diameter."""
+    """Calculate the metric for the gabriel ratio.
+    
+    A graph is a Gabriel graph if no node falls within the area of any circles constructed using each edge as its diameter.
+    
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+        
+    Returns
+    -------
+    float
+        The gabriel ratio metric.
+    """
 
     # Initial upper bound on number of nodes which could potentially be violating nodes
     possible_non_conforming = (G.number_of_edges() * G.number_of_nodes()) - (
@@ -486,98 +637,102 @@ def gabriel_ratio(G):
     )
 
 
-def get_stress(G):
+def stress(G):
+    """Calculate the metric for stress.
+
+    Stress is a measure of how well the graph preserves the pairwise distances between nodes.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+
+    Returns
+    -------
+    float
+        The stress metric.
+    """
+    # Create a single matrix of all node locations
     X = np.array([[float(G.nodes[n]["x"]), float(G.nodes[n]["y"])] for n in G.nodes()])
+    N = len(X)
 
-    apsp = dict(nx.all_pairs_shortest_path_length(G))
-    apsp = dict(sorted(apsp.items()))
+    # Create a sorted dictionary of the shortest path lengths between all pairs of nodes
+    all_pairs_shortest = dict(nx.all_pairs_shortest_path_length(G))
+    all_pairs_shortest = dict(sorted(all_pairs_shortest.items()))
 
-    d = [[] for _ in range(G.number_of_nodes())]
-
-    for i, k in enumerate(apsp):
-        apsp[k] = dict(sorted(apsp[k].items()))
-        d[i] = [float(v) for v in apsp[k].values()]
-
-    d = np.array(d)
+    # Create a matrix of the shortest path lengths between all pairs of nodes
+    d = np.zeros((N, N))
+    for i, k in enumerate(all_pairs_shortest):
+        all_pairs_shortest[k] = dict(sorted(all_pairs_shortest[k].items()))
+        d[i] = [float(v) for v in all_pairs_shortest[k].values()]
 
     from math import comb
 
-    N = len(X)
     ss = (X * X).sum(axis=1)
 
     diff = np.sqrt(abs(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X, X.T)))
 
     np.fill_diagonal(diff, 0)
 
-    stress = lambda a: np.sum(
+    stress_func = lambda a: np.sum(
         np.square(np.divide((a * diff - d), d, out=np.zeros_like(d), where=d != 0))
     ) / comb(N, 2)
 
     from scipy.optimize import minimize_scalar
 
-    min_a = minimize_scalar(stress)
+    min_a = minimize_scalar(stress_func)
 
-    return stress(a=min_a.x)
+    if not min_a.success:
+        raise ValueError(f"Failed to minimize stress function: {min_a.message}")
 
-
-def stress_not_normal(G):
-
-    X = np.array([[float(G.nodes[n]["x"]), float(G.nodes[n]["y"])] for n in G.nodes()])
-
-    apsp = dict(nx.all_pairs_shortest_path_length(G))
-    apsp = dict(sorted(apsp.items()))
-
-    d = [[] for _ in range(G.number_of_nodes())]
-
-    for i, k in enumerate(apsp):
-        apsp[k] = dict(sorted(apsp[k].items()))
-        d[i] = [float(v) for v in apsp[k].values()]
-
-    d = np.array(d)
-
-    from math import comb
-
-    N = len(X)
-    ss = (X * X).sum(axis=1)
-
-    diff = np.sqrt(abs(ss.reshape((N, 1)) + ss.reshape((1, N)) - 2 * np.dot(X, X.T)))
-
-    np.fill_diagonal(diff, 0)
-    stress = lambda a: np.sum(
-        np.square(np.divide((a * diff - d), d, out=np.zeros_like(d), where=d != 0))
-    ) / comb(N, 2)
-
-    from scipy.optimize import minimize_scalar
-
-    min_a = minimize_scalar(stress)
-    # print("a is ",min_a.x)
-    return stress(a=min_a.x)
+    return stress_func(a=min_a.x)
 
 
 def aspect_ratio(G):
+    """Calculate the metric for aspect ratio.
 
-    points = [(G.nodes[n]["x"], G.nodes[n]["y"]) for n in G.nodes()]
+    Aspect ratio is the ratio of the width to the height of the smallest bounding box that contains all nodes.
 
-    x_min = min(point[0] for point in points)
-    y_min = min(point[1] for point in points)
-    x_max = max(point[0] for point in points)
-    y_max = max(point[1] for point in points)
-    width = x_max - x_min
-    height = y_max - y_min
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
 
-    if height > width:
-        return width / height
-    else:
+    Returns
+    -------
+    float
+        The aspect ratio metric.
+    """
+    bbox = helpers._get_bounding_box(G)
+    
+    width = bbox[1,0] - bbox[0,0]
+    height = bbox[1,1] - bbox[0,1]
+
+    if width > height:
         return height / width
+    else:
+        return width / height
 
 
 def node_uniformity(G):
+    """Calculate the metric for node uniformity.
 
-    points = [(G.nodes[n]["x"], G.nodes[n]["y"]) for n in G.nodes()]
-    x_min = min(point[0] for point in points)
-    y_min = min(point[1] for point in points)
-    x_max = max(point[0] for point in points)
-    y_max = max(point[1] for point in points)
+    Node uniformity is the ratio of the number of nodes to the number of cells in a grid that contains all nodes.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+
+    Returns
+    -------
+    float
+        The node uniformity metric.
+    """
+
+    points = helpers._graph_to_points(G)
+    bbox = helpers._bounding_box(points)
+    x_min, y_min, x_max, y_max = bbox.flatten().tolist()
 
     num_points = len(points)
     num_cells = int(np.sqrt(num_points))
@@ -614,48 +769,68 @@ def node_uniformity(G):
 
 
 def neighbourhood_preservation(G, k=None):
+    """Calculate the metric for neighbourhood preservation.
 
-    if k == None:
+    Neighbourhood preservation is the average of the ratio of the number of neighbors by edges to the number 
+    of neighbors by k-nearest neighbors. This metric attempts to capture how well the geometry of the graph
+    preserves the topology of the graph.
+
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
+    k : int
+        The number of nearest neighbours to consider.
+
+    Returns
+    -------
+    float
+        The neighbourhood preservation metric.
+    """
+    N = G.number_of_nodes()
+
+    # Default to average degree
+    if k is None:
         k = np.floor(helpers.avg_degree(G)).astype(int)
 
     adj = nx.to_numpy_array(G)
+    K = np.zeros_like(adj)
 
-    K = np.zeros((G.number_of_nodes(), G.number_of_nodes()))
+    # Get node positions
+    points = helpers._graph_to_points(G)
 
-    points = [(G.nodes[n]["x"], G.nodes[n]["y"]) for n in G.nodes()]
+    # Build KD tree
+    tree = helpers._build_kd_tree(points)
 
+    # Find k nearest neighbours for each node
     for i, u in enumerate(G.nodes()):
-        for j, v in enumerate(G.nodes()):
-
-            # shortest_paths = nx.shortest_path_length(G, source=u)
-
-            # if shortest_paths[v] <= k:
-            #     K[i][j] = 1
-
-            p = (G.nodes[u]["x"], G.nodes[u]["y"])
-            nearest = helpers._find_k_nearest_points(p, points, k + 1)
-
-            q = (G.nodes[v]["x"], G.nodes[v]["y"])
-
-            if q in nearest:
+        nearest = helpers._find_k_nearest_points(points[i], k+1, tree=tree)
+        for j in nearest[1:]:
                 K[i][j] = 1
 
+    # Remove diagonal
     np.fill_diagonal(K, 0)
-    # print(K)
+
+    # Calculate the ratio of neighbours to k-nearest neighbours
     intersection = np.logical_and(adj, K)
     union = np.logical_or(adj, K)
     return intersection.sum() / union.sum()
 
 
-def count_crossings(G):
+
+def _count_crossings(G, crosses_limit=1e6):
     """
     Count the number of edge crossings in a graph.
 
-    Parameters:
-    - G: NetworkX graph object
+    Parameters
+    ----------
+    G : nx.Graph
+        The graph to calculate the metric for.
 
-    Returns:
-    - c: Number of edge crossings
+    Returns
+    -------
+    int
+        The number of edge crossings in the graph.
     """
 
     covered = []  # List to keep track of covered edges
@@ -667,6 +842,9 @@ def count_crossings(G):
         line_a = (a_p1, a_p2)  # Line segment of edge e
 
         for e2 in G.edges:
+            if c > crosses_limit:
+                raise ValueError(f"Number of edge crossings exceeds the limit of {crosses_limit}")
+
             if e == e2:
                 continue  # Skip if the edges are the same
 
@@ -687,11 +865,10 @@ def count_crossings(G):
     return c
 
 def symmetry(G=None, num_crossings=None, show_sym=False, crosses_limit=1e6, threshold=1, tolerance=0.1):
-    """Calculate the symmetry metric."""
+    """
+    Calculate the symmetry metric."""
     if num_crossings is None:
-        num_crossings = count_crossings(G)
-    if num_crossings > crosses_limit:
-        return 0
+        num_crossings = _count_crossings(G, crosses_limit)
 
     axes = helpers._find_bisectors(G)
 

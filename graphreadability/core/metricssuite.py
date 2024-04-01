@@ -40,7 +40,7 @@ class MetricsSuite:
             "edge_length": {"func": edge_length},
             "gabriel_ratio": {"func": gabriel_ratio},
             "crossing_angle": {"func": crossing_angle},
-            "stress": {"func": get_stress},
+            "stress": {"func": stress},
             "neighbourhood_preservation": {"func": neighbourhood_preservation},
             "aspect_ratio": {"func": aspect_ratio},
             "node_uniformity": {"func": node_uniformity},

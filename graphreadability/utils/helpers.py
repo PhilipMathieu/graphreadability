@@ -78,7 +78,7 @@ def _same_distance(a, b, tolerance=0.5):
     return np.isclose(np.abs(a) - np.abs(b), 0, atol=tolerance)
 
 
-def _bounding_box_nd(points):
+def _bounding_box(points):
     """Return the bounding cube of a set of points in any number of dimensions."""
     return np.array([np.min(points, axis=0), np.max(points, axis=0)])
 
@@ -125,7 +125,7 @@ def _on_opposite_sides(a, b, line):
     )
 
 
-def _bounding_box(line_a, line_b):
+def _bounding_box_lines(line_a, line_b):
     """Check if the bounding boxes of two lines intersect. Return True if they do."""
     x1 = np.minimum(line_a[0][0], line_a[1][0])
     x2 = np.maximum(line_a[0][0], line_a[1][0])
@@ -142,13 +142,19 @@ def _bounding_box(line_a, line_b):
     )
 
 
-def _find_k_nearest_points(p, points, k):
+def _build_kd_tree(points):
+    """Create a KDTree from a set of points."""
+    return KDTree(points)
+
+def _find_k_nearest_points(p, k, points=None, tree=None):
     """Find the k nearest points to a given point p."""
     # Promote points to numpy array
-    tree = KDTree(points)
+    if tree is None:
+        tree = _build_kd_tree(points)
     distances, indices = tree.query(p, k=k)
-    nearest = np.array(points)[indices.astype(int)]
-    return nearest
+    if points:
+        return points[indices.astype(int)]
+    return indices
 
 
 def lines_intersect(line_a, line_b):
@@ -184,7 +190,7 @@ def _intersect(line_a, line_b):
         _on_opposite_sides(line_a[0], line_a[1], line_b),
         np.logical_and(
             _on_opposite_sides(line_b[0], line_b[1], line_a),
-            _bounding_box(line_a, line_b),
+            _bounding_box_lines(line_a, line_b),
         ),
     )
 
@@ -426,10 +432,10 @@ def _graph_to_points(G, edges=None):
     return points
 
 
-def get_bounding_box(G):
+def _get_bounding_box(G):
     """Helper function to get the bounding box of the graph."""
     points = _graph_to_points(G)
-    return _bounding_box_nd(points)
+    return _bounding_box(points)
 
 def _midpoint(a, b, G):
     """Given two nodes and the graph they are in, return the midpoint between them"""
