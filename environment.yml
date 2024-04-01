@@ -2,7 +2,7 @@ name: gr-min
 channels:
   - conda-forge
 dependencies:
-  - python=3.7
+  - python
   - networkx
   - numpy
   - matplotlib
