@@ -4,24 +4,40 @@ from typing import Optional, Union, Sequence
 import networkx as nx
 from ..metrics import metrics
 
-# Get all the functions in the metrics module
-_metric_functions = [
+# Generate the list of metric functions
+METRIC_FUNCS = [
     func
     for func in dir(metrics)
     if callable(getattr(metrics, func)) and not func.startswith("__")
 ]
 
-# Generate the DEFAULT_WEIGHTS dictionary
-DEFAULT_WEIGHTS = {func: 1 for func in _metric_functions}
+# Set default weights for all metrics
+DEFAULT_WEIGHTS = {func: 1 for func in METRIC_FUNCS}
 
-# Generate the METRICS dictionary
-METRICS = {func: {"func": getattr(metrics, func)} for func in _metric_functions}
+# Generate the dictionary of metric functions
+METRICS = {func: {"func": getattr(metrics, func)} for func in METRIC_FUNCS}
 
 
 class MetricsSuite:
-    """A suite for calculating several metrics for graph drawing aesthetics, as well as methods for combining these into a single cost function.
-    Takes as an argument a path to a GML or GraphML file, or a NetworkX Graph object. Also takes as an argument a dictionary of metric:weight key/values.
-    Note: to prevent unnecessary calculations, omit metrics with weight 0."""
+    """
+    A suite for calculating several metrics for graph drawing aesthetics, as well as methods for
+    combining these into a single cost function.
+
+    Parameters
+    ----------
+    graph : Union[nx.Graph, str], optional
+        The graph to be analyzed. Can be a NetworkX Graph object or a path to a GML or GraphML file.
+    metric_weights : Optional[dict], optional
+        Dictionary of metric:weight key/values. Default is DEFAULT_WEIGHTS.
+    metric_combination_strategy : str, optional
+        The multiple criteria decision analysis technique to use for combining metrics. Default is "weighted_sum".
+    sym_threshold : Union[int, float], optional
+        The threshold for symmetry detection. Default is 2.
+    sym_tolerance : Union[int, float], optional
+        The tolerance for symmetry detection. Default is 3.
+    file_type : str, optional
+        The file type of the graph file. Default is "GraphML".
+    """
 
     def __init__(
         self,
@@ -77,7 +93,70 @@ class MetricsSuite:
 
         self.sym_threshold = sym_threshold
 
+    def __repr__(self):
+        """Return a detailed string representation of the MetricsSuite object."""
+        return (
+            f"MetricsSuite(graph={self._filename}, metric_weights={self.initial_weights}, "
+            f"metric_combination_strategy={self.metric_combination_strategy}, sym_threshold={self.sym_threshold}, "
+            "sym_tolerance={self.sym_tolerance})"
+        )
+
+    def __str__(self):
+        """Return a concise string representation of the MetricsSuite object."""
+        return (
+            f"MetricsSuite({self._filename}) object with {len(self.metrics)} metrics."
+        )
+
+    def __copy__(self):
+        """Return a shallow copy of the MetricsSuite object."""
+        return MetricsSuite(
+            graph=self._graph,
+            metric_weights=self.initial_weights,
+            metric_combination_strategy=self.metric_combination_strategy,
+            sym_threshold=self.sym_threshold,
+            sym_tolerance=self.sym_tolerance,
+        )
+
+    def __deepcopy__(self, memo):
+        """Return a deep copy of the MetricsSuite object."""
+        return MetricsSuite(
+            graph=self._graph.copy(),
+            metric_weights=self.initial_weights,
+            metric_combination_strategy=self.metric_combination_strategy,
+            sym_threshold=self.sym_threshold,
+            sym_tolerance=self.sym_tolerance,
+        )
+
+    def load_graph_test(self, nxg=nx.sedgewick_maze_graph):
+        """Loads a test graph with a random layout."""
+        G = nxg()
+        pos = nx.random_layout(G)
+        for k, v in pos.items():
+            pos[k] = {"x": v[0], "y": v[1]}
+
+        nx.set_node_attributes(G, pos)
+        return G
+
+    def copy(self, deep=True, memo=None):
+        """Return a copy of the MetricsSuite object, defaulting to a deep copy."""
+        if deep is True or memo is not None:
+            return self.__deepcopy__(memo)
+        else:
+            return self.__copy__()
+
     def set_weights(self, metric_weights: Sequence[float]):
+        """Set the weights of the metrics in the MetricsSuite object.
+
+        Parameters
+        ----------
+        metric_weights : dict
+            Dictionary of metric:weight key/values.
+
+        Returns
+        -------
+        dict
+            Dictionary of metric:weight key/values for metrics with non-zero weights.
+        """
         metrics_to_remove = [
             metric for metric, weight in metric_weights.items() if weight <= 0
         ]
@@ -95,38 +174,21 @@ class MetricsSuite:
             metric: weight for metric, weight in metric_weights.items() if weight > 0
         }
 
-    def weighted_prod(self):
-        """Returns the weighted product of all metrics. Should NOT be used as a cost function - may be useful for comparing graphs."""
-        return math.prod(
-            self.metrics[metric]["value"] * self.metrics[metric]["weight"]
-            for metric in self.initial_weights
-        )
+    def apply_layout(self, pos):
+        """Applies the given layout to the graph.
 
-    def weighted_sum(self):
-        """Returns the weighted sum of all metrics. Can be used as a cost function."""
-        total_weight = sum(self.metrics[metric]["weight"] for metric in self.metrics)
-        return (
-            sum(
-                self.metrics[metric]["value"] * self.metrics[metric]["weight"]
-                for metric in self.initial_weights
-            )
-            / total_weight
-        )
+        Parameters
+        ----------
+        pos : dict(node_id, tuple(float, float))
+            Dictionary of node positions.
 
-    def load_graph_test(self, nxg=nx.sedgewick_maze_graph):
-        """Loads a test graph with a random layout."""
-        G = nxg()
-        pos = nx.random_layout(G)
-        for k, v in pos.items():
-            pos[k] = {"x": v[0], "y": v[1]}
-
-        nx.set_node_attributes(G, pos)
-        return G
-
-    def reset_metrics(self):
-        for metric in self.metrics:
-            self.metrics[metric]["value"] = None
-            self.metrics[metric]["is_calculated"] = False
+        Returns
+        -------
+        None
+        """
+        # Convert to x and y attributes
+        xy = {k: {"x": v[0], "y": v[1]} for k, v in pos.items()}
+        nx.set_node_attributes(self._graph, xy)
 
     def calculate_metric(self, metric: str = None):
         """Calculate the value of the given metric by calling the associated function."""
@@ -136,11 +198,17 @@ class MetricsSuite:
             )
 
         if not self.metrics[metric]["is_calculated"]:
-            self.metrics[metric]["value"] = self.metrics[metric]["func"](self._graph)
-            self.metrics[metric]["is_calculated"] = True
+            try:
+                self.metrics[metric]["value"] = self.metrics[metric]["func"](
+                    self._graph
+                )
+                self.metrics[metric]["is_calculated"] = True
+            except Exception as e:
+                print(f"Error calculating metric {metric}: {e}")
+                self.metrics[metric]["value"] = None
+                self.metrics[metric]["is_calculated"] = False
         else:
             pass
-            # print(f"Metric {metric} already calculated. Skipping.")
 
     def calculate_metrics(self):
         """Calculates the values of all metrics with non-zero weights."""
@@ -153,6 +221,35 @@ class MetricsSuite:
         end_time = time.perf_counter()
         print(
             f"Calculated {n_metrics} metrics in {end_time - start_time:0.3f} seconds."
+        )
+
+    def reset_metrics(self):
+        """Resets all metric values and is_calculated flags to None and False, respectively."""
+        for metric in self.metrics:
+            self.metrics[metric]["value"] = None
+            self.metrics[metric]["is_calculated"] = False
+
+    def weighted_prod(self):
+        """Returns the weighted product of all metrics. Should NOT be used as a cost function - may be useful for comparing graphs."""
+        return math.prod(
+            self.metrics[metric]["value"] * self.metrics[metric]["weight"]
+            for metric in self.initial_weights
+        )
+
+    def weighted_sum(self):
+        """Returns the weighted sum of all metrics. Can be used as a cost function."""
+        total_weight = sum(
+            self.metrics[metric]["weight"]
+            for metric in self.metrics
+            if self.metrics[metric]["value"] is not None
+        )
+        return (
+            sum(
+                self.metrics[metric]["value"] * self.metrics[metric]["weight"]
+                for metric in self.initial_weights
+                if self.metrics[metric]["value"] is not None
+            )
+            / total_weight
         )
 
     def combine_metrics(self):
