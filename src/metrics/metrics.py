@@ -434,7 +434,7 @@ def __crossing_angle_old(G, crossing_limit=1e6):
     return 1 - (angles_sum / num_minor_nodes) if num_minor_nodes > 0 else 1
 
 
-def node_orthogonality(G):
+def __node_orthogonality(G):
     """Calculate the metric for node orthogonality."""
     coord_set = []
 
@@ -652,7 +652,7 @@ def gabriel_ratio(G):
     )
 
 
-def stress(G):
+def __stress(G):
     """Calculate the metric for stress.
 
     Stress is a measure of how well the graph preserves the pairwise distances between nodes.
@@ -884,7 +884,7 @@ def __count_crossings(G, crosses_limit=1e6):
     return c
 
 
-def symmetry(
+def __symmetry(
     G=None,
     num_crossings=None,
     show_sym=False,
