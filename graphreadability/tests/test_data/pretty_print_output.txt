@@ -1,0 +1,16 @@
+--------------------------------------------------
+Metric                        Value	Weight
+--------------------------------------------------
+angular_resolution            0.800	1
+aspect_ratio                  None 	None
+crossing_angle                None 	None
+edge_crossing                 1.000	0.5
+edge_length                   None 	None
+edge_orthogonality            None 	None
+gabriel_ratio                 None 	None
+neighbourhood_preservation    None 	None
+node_resolution               None 	None
+node_uniformity               None 	None
+--------------------------------------------------
+Evaluation using weighted_sum: 0.86667
+--------------------------------------------------

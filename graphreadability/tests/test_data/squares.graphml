@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns
+    http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+    <!-- Node positions: X-coordinate and Y-coordinate -->
+    <key id="d0" for="node" attr.name="x" attr.type="double"/>
+    <key id="d1" for="node" attr.name="y" attr.type="double"/>
+
+    <graph id="G" edgedefault="undirected">
+        <!-- Define vertices (nodes arranged in concentric squares) -->
+        <!-- Outer Square -->
+        <node id="n0">
+            <data key="d0">50</data>
+            <data key="d1">50</data>
+        </node>
+        <node id="n1">
+            <data key="d0">200</data>
+            <data key="d1">50</data>
+        </node>
+        <node id="n2">
+            <data key="d0">200</data>
+            <data key="d1">200</data>
+        </node>
+        <node id="n3">
+            <data key="d0">50</data>
+            <data key="d1">200</data>
+        </node>
+        <!-- Inner Square -->
+        <node id="n4">
+            <data key="d0">100</data>
+            <data key="d1">100</data>
+        </node>
+        <node id="n5">
+            <data key="d0">150</data>
+            <data key="d1">100</data>
+        </node>
+        <node id="n6">
+            <data key="d0">150</data>
+            <data key="d1">150</data>
+        </node>
+        <node id="n7">
+            <data key="d0">100</data>
+            <data key="d1">150</data>
+        </node>
+
+        <!-- Define edges (connecting nodes) -->
+        <!-- Outer Square -->
+        <edge source="n0" target="n1"/>
+        <edge source="n1" target="n2"/>
+        <edge source="n2" target="n3"/>
+        <edge source="n3" target="n0"/>
+        <!-- Connections between outer and inner square -->
+        <edge source="n0" target="n4"/>
+        <edge source="n1" target="n5"/>
+        <edge source="n2" target="n6"/>
+        <edge source="n3" target="n7"/>
+        <!-- Inner Square -->
+        <edge source="n4" target="n5"/>
+        <edge source="n5" target="n6"/>
+        <edge source="n6" target="n7"/>
+        <edge source="n7" target="n4"/>
+
+    </graph>
+</graphml>

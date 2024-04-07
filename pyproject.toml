@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -36,19 +36,32 @@ dependencies = [
 tests = [
     "pandas"
 ]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings",
+    "mkdocstrings-python",
+]
 
 [project.urls]
 Homepage = "https://github.com/PhilipMathieu/graphreadability"
 
 [tool.hatch.version]
-path = "src/__init__.py"
+source = "vcs"
+tag-pattern = "^(?:[\\w-]+-)?(?P<version>[vV]?\\d+(?:.\\d+){0,2})"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src",
+    "graphreadability",
 ]
 
 [tool.hatch.build.targets.wheel]
 include = [
-    "src",
+    "graphreadability",
 ]
+
+[tool.hatch.build.hooks.vcs]
+version-file = "_version.py"

@@ -4,36 +4,36 @@
   <key id="d0" for="node" attr.name="x" attr.type="long" />
   <graph edgedefault="undirected">
     <node id="Node 1">
-      <data key="d0">962</data>
-      <data key="d1">31</data>
+      <data key="d0">30</data>
+      <data key="d1">30</data>
     </node>
     <node id="Node 2">
-      <data key="d0">1064</data>
-      <data key="d1">138</data>
+      <data key="d0">130</data>
+      <data key="d1">130</data>
     </node>
     <node id="Node 3">
-      <data key="d0">1181</data>
-      <data key="d1">147</data>
+      <data key="d0">230</data>
+      <data key="d1">130</data>
     </node>
     <node id="Node 4">
-      <data key="d0">1292</data>
-      <data key="d1">26</data>
+      <data key="d0">330</data>
+      <data key="d1">30</data>
     </node>
     <node id="Node 5">
-      <data key="d0">1289</data>
-      <data key="d1">360</data>
+      <data key="d0">330</data>
+      <data key="d1">400</data>
     </node>
     <node id="Node 6">
-      <data key="d0">958</data>
-      <data key="d1">367</data>
+      <data key="d0">30</data>
+      <data key="d1">400</data>
     </node>
     <node id="Node 7">
-      <data key="d0">1070</data>
-      <data key="d1">252</data>
+      <data key="d0">130</data>
+      <data key="d1">270</data>
     </node>
     <node id="Node 8">
-      <data key="d0">1180</data>
-      <data key="d1">253</data>
+      <data key="d0">230</data>
+      <data key="d1">270</data>
     </node>
     <edge source="Node 1" target="Node 2" />
     <edge source="Node 1" target="Node 6" />

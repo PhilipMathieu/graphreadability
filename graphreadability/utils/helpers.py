@@ -465,6 +465,18 @@ def draw_graph(G, flip=True, ax=None, **kwargs):
     """Draws the graph using standard NetworkX methods with matplotlib. Due to the nature of the coordinate systems used,
     graphs will be flipped on the X axis. To see the graph the way it would be drawn in yEd, set flip to True (default=True).
     """
+    default_kwargs = {
+        "edge_color": "#BDCCB4",
+        "node_color": "#778181",
+        "linewidths": 3,
+        "node_size": 300,
+        "width": 5,
+        "edgecolors": "#333333",
+        "with_labels": False,
+    }
+    for key, value in default_kwargs.items():
+        if key not in kwargs:
+            kwargs[key] = value
 
     if flip:
         pos = {
@@ -477,4 +489,4 @@ def draw_graph(G, flip=True, ax=None, **kwargs):
             for (k, v) in [u for u in G.nodes(data=True)]
         }
 
-    nx.draw(G, pos=pos, ax=ax, with_labels=True, **kwargs)
+    nx.draw(G, pos=pos, ax=ax, **kwargs)

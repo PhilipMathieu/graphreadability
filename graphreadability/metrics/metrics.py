@@ -9,178 +9,14 @@ import networkx as nx
 from scipy.spatial import ConvexHull as __ConvexHull
 from ..utils import helpers
 from ..utils import crosses_promotion
+from ..metrics.metric_helpers import (
+    _count_impossible_triangle_crossings,
+    _count_4_cycles,
+    _calculate_edge_crossings,
+)
 
 
-def __count_impossible_triangle_crossings(G):
-    """Count the number of impossible triangle crossings in a graph.
-
-    An impossible triangle crossing is a crossing that cannot exist due to the geometry of the triangles involved.
-    The most crossings that can occur between two triangles is six. If the two triangles share a node, this number
-    decreases to four. If the two triangles share an edge, this number decreases to two. If the two triangles are the
-    same, this number decreases to zero.
-
-    Parameters
-    ----------
-    G : nx.Graph
-        The graph to calculate impossible triangle crossings for.
-
-    Returns
-    -------
-    total_impossible : int
-        The total number of impossible triangle crossings in the graph.
-    """
-    # Create a list of sets of three nodes that form a triangle
-    triangles = []
-    for u, v in G.edges():
-        for t in G.neighbors(u):
-            if v in G.neighbors(t) and {u, v, t} not in triangles:
-                triangles.append({u, v, t})
-
-    # Create a list of the edge sets of the triangles
-    triangle_edges = []
-    for u, v, t in triangles:
-        if {u, v} not in triangle_edges:
-            triangle_edges.append({u, v})
-        if {v, t} not in triangle_edges:
-            triangle_edges.append({v, t})
-        if {t, u} not in triangle_edges:
-            triangle_edges.append({t, u})
-
-    # Count the number of impossible triangles
-    total_impossible = 0
-    for u, v, t in triangles:
-        # Get the edges of the triangle
-        bubble = []
-        bubble.extend(G.edges(u))
-        bubble.extend(G.edges(v))
-        bubble.extend(G.edges(t))
-
-        # Create a subgraph of the triangle
-        subG = nx.Graph(bubble)
-
-        # Iterate over the edges in the input graph
-        for a, b in G.edges():
-            # Skip the edges of the subgraph
-            if (a, b) in subG.edges() or (b, a) in subG.edges():
-                continue
-
-            # Skip the edges that are part of a triangle
-            if {a, b} in triangle_edges:
-                continue
-
-            total_impossible += 1
-
-    for i, triangle in enumerate(triangles):
-        u, v, t = triangle
-        for a, b, c in triangles[i + 1 :]:
-            # Skip the same triangle
-            if {u, v, t} == {a, b, c}:
-                continue
-
-            # Triangles share an edge
-            if any(
-                ({u, v} == {a, b} or {u, v} == {b, c} or {u, v} == {c, a}),
-                ({v, t} == {a, b} or {v, t} == {b, c} or {v, t} == {c, a}),
-                ({t, u} == {a, b} or {t, u} == {b, c} or {t, u} == {c, a}),
-            ):
-
-                total_impossible += 1
-                continue
-
-            # Triangles share a node
-            if any(
-                (u == a or u == b or u == c),
-                (v == a or v == b or v == c),
-                (t == a or t == b or t == c),
-            ):
-                total_impossible += 2
-                continue
-
-            # All crossings are possible
-            total_impossible += 3
-
-    num_4_cycles = 0
-    for u, v in G.edges():
-        for t in G.neighbors(u):
-            if t == v:
-                continue
-
-            for w in G.neighbors(v):
-                if w == t or w == u:
-                    continue
-
-                if w in G.neighbors(t):
-                    square = G.subgraph([u, v, t, w])
-                    num_adj = 0
-
-                    for su, sv in square.edges():
-                        if {su, sv} in triangle_edges:
-                            num_adj += 1
-
-                    if num_adj < 2:
-                        num_4_cycles += 1
-
-    return total_impossible + (num_4_cycles // 4)
-
-
-def __calculate_edge_crossings(G, save_edge_attributes=True):
-    """Calculate all edge crossings in a graph and save them to the edge data.
-
-    Parameters
-    ----------
-    G : nx.Graph
-        The graph to calculate edge crossings for.
-    save_edge_attributes : bool
-        Whether to save the edge crossings to the edge data.
-
-    Returns
-    -------
-    crossings : set((edge1, edge2))
-        A set of all edge crossings in the graph.
-    angles : dict((edge1, edge2), angle)
-        A dictionary of angles between edges.
-    """
-    crossings = set()
-    angles = {}
-    if save_edge_attributes:
-        edge_crossings = {edge: {"count": 0, "angles": []} for edge in G.edges}
-
-    # Iterate over all pairs of edges and check for intersections
-    edges = list(G.edges)
-    for i, edge1 in enumerate(edges):
-        for edge2 in edges[i + 1 :]:
-            # Check for intersections
-            line_a = (
-                (G.nodes[edge1[0]]["x"], G.nodes[edge1[0]]["y"]),
-                (G.nodes[edge1[1]]["x"], G.nodes[edge1[1]]["y"]),
-            )
-            line_b = (
-                (G.nodes[edge2[0]]["x"], G.nodes[edge2[0]]["y"]),
-                (G.nodes[edge2[1]]["x"], G.nodes[edge2[1]]["y"]),
-            )
-            # Skip edges that share a node
-            if len(set(line_a) & set(line_b)) > 0:
-                continue
-            if helpers._intersect(line_a, line_b):
-                crossings.add((edge1, edge2))
-                # Calculate angle between edges
-                v1 = helpers.edge_vector(line_a)
-                v2 = helpers.edge_vector(line_b)
-                angle = helpers.calculate_angle_between_vectors(v1, v2)
-                angles[edge1, edge2] = angle
-                if save_edge_attributes:
-                    edge_crossings[edge1]["count"] += 1
-                    edge_crossings[edge2]["count"] += 1
-                    edge_crossings[edge1]["angles"].append(angle)
-                    edge_crossings[edge2]["angles"].append(angle)
-
-    # Save edge crossings to edge data
-    if save_edge_attributes:
-        nx.set_edge_attributes(G, edge_crossings, "edge_crossings")
-    return crossings, angles
-
-
-def edge_crossing(G, verbose=False):
+def edge_crossing(G, subtract_tri=True, subtract_4=True):
     """Calculate the metric for the number of edge_crossing, scaled against the total
     number of possible crossings.
 
@@ -202,26 +38,20 @@ def edge_crossing(G, verbose=False):
 
     # Calculate the number of impossible crossings based on the node degrees
     degree = np.array([degree[1] for degree in G.degree()])
-    c_impossible = np.dot(degree, degree - 1) / 2
+    c_deg = np.dot(degree, degree - 1) / 2
 
     # Calculate the maximum number of possible crossings
-    c_mx = c_all - c_impossible
+    c_mx = c_all - c_deg
 
-    if verbose:
-        # Calculate the number of impossible crossings based on triangle geometry
-        c_tri = __count_impossible_triangle_crossings(G)
-        c_mx_no_tri = c_all - c_tri
-        c_mx_no_tri_no_deg = c_all - c_impossible - c_tri
-        print(f"Total Upper bound: {c_all:.0f}")
-        print(f"Impossible by degree: {c_impossible:.0f}")
-        print(f"Impossible by triangle: {c_tri:.0f}")
-        print(f"Upper bound removing degree: {c_mx:.0f}")
-        print(f"Upper bound removing triangles: {c_mx_no_tri:.0f}")
-        print(f"Upper bound removing degree and triangles: {c_mx_no_tri_no_deg:.0f}")
+    if subtract_tri:
+        c_mx -= _count_impossible_triangle_crossings(G)
+
+    if subtract_4:
+        c_mx -= _count_4_cycles(G)
 
     # Retrieve the edge crossings from the graph if they have been calculated, otherwise calculate
     if not nx.get_edge_attributes(G, "edge_crossings"):
-        crossings, angles = __calculate_edge_crossings(G)
+        crossings, angles = _calculate_edge_crossings(G)
     else:
         edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
         crossings = set()
@@ -231,16 +61,6 @@ def edge_crossing(G, verbose=False):
 
     # Calculate the number of edge crossings
     c = len(crossings)
-
-    if verbose:
-        print(f"Num Crossings: {c}")
-        print(f"Original EC: {1 - (c / c_mx) if c_mx > 0 else 1}")
-        print(
-            f"EC without triangles: {1 - (c / c_mx_no_tri) if c_mx_no_tri > 0 else 1}"
-        )
-        print(
-            f"EC without triangles and degrees: {1 - (c / c_mx_no_tri_no_deg) if c_mx_no_tri_no_deg > 0 else 1}"
-        )
 
     return 1 - helpers.divide_or_zero(c, c_mx)
 
@@ -373,7 +193,7 @@ def crossing_angle(G, crossing_limit=1e6):
 
     # Check if graph edges have edge_crossings attribute
     if not nx.get_edge_attributes(G, "edge_crossings"):
-        __calculate_edge_crossings(G)
+        _calculate_edge_crossings(G)
 
     edge_crossings = nx.get_edge_attributes(G, "edge_crossings")
 
@@ -652,7 +472,7 @@ def gabriel_ratio(G):
     )
 
 
-def stress(G):
+def __stress(G):
     """Calculate the metric for stress.
 
     Stress is a measure of how well the graph preserves the pairwise distances between nodes.
@@ -884,7 +704,7 @@ def __count_crossings(G, crosses_limit=1e6):
     return c
 
 
-def symmetry(
+def _symmetry(
     G=None,
     num_crossings=None,
     show_sym=False,
