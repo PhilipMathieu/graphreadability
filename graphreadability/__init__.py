@@ -5,10 +5,9 @@ __description__ = "A Python package for calculating readability metrics for grap
 
 # Import core modules
 from .core.metricssuite import MetricsSuite
-from .core.readabilitygraph import ReadabilityGraph
 
 # Import layout algorithms
-from .layout.layout_algorithms import naive_optimizer
+from .layout import layout_algorithms
 
 # Import utils
 from .utils import helpers
@@ -20,7 +19,7 @@ from . import tests
 __all__ = [
     "MetricsSuite",
     "ReadabilityGraph",
-    "naive_optimizer",
+    "layout_algorithms",
     "helpers",
     "crosses_promotion",
     "tests",

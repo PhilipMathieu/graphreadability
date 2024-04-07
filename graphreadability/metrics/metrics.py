@@ -254,7 +254,7 @@ def __crossing_angle_old(G, crossing_limit=1e6):
     return 1 - (angles_sum / num_minor_nodes) if num_minor_nodes > 0 else 1
 
 
-def __node_orthogonality(G):
+def node_orthogonality(G):
     """Calculate the metric for node orthogonality."""
     coord_set = []
 
@@ -704,7 +704,7 @@ def __count_crossings(G, crosses_limit=1e6):
     return c
 
 
-def __symmetry(
+def _symmetry(
     G=None,
     num_crossings=None,
     show_sym=False,
