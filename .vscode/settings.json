@@ -1,3 +1,6 @@
 {
-  "cSpell.words": ["neighbourhood"]
+  "cSpell.words": ["neighbourhood"],
+  "python.testing.pytestArgs": ["graphreadability"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }

@@ -44,7 +44,7 @@ def _in_circle(x, y, center_x, center_y, r):
 def _are_collinear_points(a, b, c):
     """Return true if the three points are collinear."""
     # Check that all three points are (x, y) pairs
-    if not all(isinstance(p, (list, np.ndarray)) for p in [a, b, c]):
+    if not all(isinstance(p, (list, np.ndarray, tuple)) for p in [a, b, c]):
         raise TypeError(
             f"Expected a, b, and c to be a list or numpy array, got {type(a)}, {type(b)}, and {type(c)}"
         )
@@ -153,7 +153,7 @@ def _find_k_nearest_points(p, k, points=None, tree=None):
     if tree is None:
         tree = _build_kd_tree(points)
     distances, indices = tree.query(p, k=k)
-    if points:
+    if points is not None:
         return points[indices.astype(int)]
     return indices
 
@@ -208,9 +208,6 @@ def compute_intersection(p1, q1, p2, q2):
     py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / (
         (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
     )
-
-    px[px == -0.0] = 0
-    py[py == -0.0] = 0.0
     return px, py
 
 

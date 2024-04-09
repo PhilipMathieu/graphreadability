@@ -1,7 +1,8 @@
 import numpy as np
 import networkx as nx
-import src.utils.helpers as helpers
 import unittest
+
+from graphreadability import helpers
 
 
 class TestHelpers(unittest.TestCase):
@@ -19,8 +20,8 @@ class TestHelpers(unittest.TestCase):
 
         With the crossing edges intersecting at the origin.
         """
-        self.graph = nx.Graph()
-        self.graph.add_nodes_from(
+        self.G = nx.Graph()
+        self.G.add_nodes_from(
             [
                 (1, {"x": 1, "y": 1}),
                 (2, {"x": -1, "y": 1}),
@@ -29,7 +30,7 @@ class TestHelpers(unittest.TestCase):
                 (5, {"x": 2, "y": 1}),
             ]
         )
-        self.graph.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 2), (1, 3)])
+        self.G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 2), (1, 3)])
 
     def test_is_positive(self):
         self.assertTrue(helpers._is_positive(1))
@@ -122,7 +123,7 @@ class TestHelpers(unittest.TestCase):
     def test_bounding_box_nd(self):
         points = np.array([[0, 0], [1, 1], [2, 2]])
         self.assertTrue(
-            np.array_equal(helpers._bounding_box_nd(points), np.array([[0, 0], [2, 2]]))
+            np.array_equal(helpers._bounding_box(points), np.array([[0, 0], [2, 2]]))
         )
 
     def test_midpoint_nd(self):
@@ -194,13 +195,20 @@ class TestHelpers(unittest.TestCase):
     def test_bounding_box(self):
         line_a = np.array([[0, 0], [1, 1]])
         line_b = np.array([[0, 1], [1, 0]])
-        self.assertTrue(helpers._bounding_box(line_a, line_b))
-        line_a = np.array([[2, 2], [1, 1]])
-        self.assertTrue(helpers._bounding_box(line_a, line_b))
-        line_a = np.array([[2, 2], [3, 3]])
-        self.assertFalse(helpers._bounding_box(line_a, line_b))
-        line_a = np.array([[-1, -1], [0.1, 0.1]])
-        self.assertTrue(helpers._bounding_box(line_a, line_b))
+        self.assertTrue(
+            np.array_equal(helpers._bounding_box(line_a), np.array([[0, 0], [1, 1]]))
+        )
+        self.assertTrue(
+            np.array_equal(helpers._bounding_box(line_b), np.array([[0, 0], [1, 1]]))
+        )
+        line_b = np.array([[0, 2], [1, 1]])
+        self.assertTrue(
+            np.array_equal(helpers._bounding_box(line_b), np.array([[0, 1], [1, 2]]))
+        )
+        line_b = np.array([[0, -1], [-1, 2]])
+        self.assertTrue(
+            np.array_equal(helpers._bounding_box(line_b), np.array([[-1, -1], [0, 2]]))
+        )
 
     def test_find_k_nearest_points(self):
         p = np.array([0, 0])
@@ -208,54 +216,54 @@ class TestHelpers(unittest.TestCase):
         k = 1
         self.assertTrue(
             np.array_equal(
-                helpers._find_k_nearest_points(p, points, k), np.array([0, 0])
+                helpers._find_k_nearest_points(p, k, points), np.array([0, 0])
             )
         )
         k = 2
         self.assertTrue(
             np.array_equal(
-                helpers._find_k_nearest_points(p, points, k),
+                helpers._find_k_nearest_points(p, k, points),
                 np.array([[0, 0], [-0.5, -0.5]]),
             )
         )
         k = 3
         self.assertTrue(
             np.array_equal(
-                helpers._find_k_nearest_points(p, points, k),
+                helpers._find_k_nearest_points(p, k, points),
                 np.array([[0, 0], [-0.5, -0.5], [1, 1]]),
             )
         )
         k = 4
         self.assertTrue(
             np.array_equal(
-                helpers._find_k_nearest_points(p, points, k),
+                helpers._find_k_nearest_points(p, k, points),
                 np.array([[0, 0], [-0.5, -0.5], [1, 1], [2, 2]]),
             )
         )
         k = 0  # Should throw an error
         with self.assertRaises(ValueError):
-            helpers._find_k_nearest_points(p, points, k)
+            helpers._find_k_nearest_points(p, k, points)
         k = 5
         with self.assertRaises(IndexError):
-            helpers._find_k_nearest_points(p, points, k)
+            helpers._find_k_nearest_points(p, k, points)
 
     def test_lines_intersect(self):
         line_a = np.array([[0, 0], [1, 1]])
         line_b = np.array([[0, 1], [1, 0]])
-        self.assertTrue(helpers._lines_intersect(line_a, line_b))
+        self.assertTrue(helpers.lines_intersect(line_a, line_b))
         line_b = np.array([[0, 2], [1, 1]])
-        self.assertFalse(helpers._lines_intersect(line_a, line_b))
+        self.assertTrue(helpers.lines_intersect(line_a, line_b))
         line_b = line_a
-        self.assertTrue(helpers._lines_intersect(line_a, line_b))
+        self.assertTrue(helpers.lines_intersect(line_a, line_b))
 
     def test_intersect(self):
         line_a = np.array([[0, 0], [1, 1]])
         line_b = np.array([[0, 1], [1, 0]])
         self.assertTrue(helpers._intersect(line_a, line_b))
-        line_b = np.array([[0, 2], [1, 1]])
+        line_b = np.array([[0, 1], [1, 2]])
         self.assertFalse(helpers._intersect(line_a, line_b))
         line_b = line_a
-        self.assertTrue(helpers._intersect(line_a, line_b))
+        self.assertFalse(helpers._intersect(line_a, line_b))
 
     def test_compute_intersection(self):
         p1 = np.array([0, 0])
@@ -264,7 +272,7 @@ class TestHelpers(unittest.TestCase):
         q2 = np.array([1, 0])
         self.assertTrue(
             np.array_equal(
-                helpers._compute_intersection(p1, q1, p2, q2), np.array([0.5, 0.5])
+                helpers.compute_intersection(p1, q1, p2, q2), np.array([0.5, 0.5])
             )
         )
         p1 = np.array([0, 0])
@@ -273,7 +281,7 @@ class TestHelpers(unittest.TestCase):
         q2 = np.array([1, 1])
         self.assertTrue(
             np.array_equal(
-                helpers._compute_intersection(p1, q1, p2, q2), np.array([1, 1])
+                helpers.compute_intersection(p1, q1, p2, q2), np.array([1, 1])
             )
         )
 

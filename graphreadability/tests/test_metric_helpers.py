@@ -1,5 +1,5 @@
 import networkx as nx
-from ..metrics import metric_helpers
+from graphreadability.metrics import metric_helpers
 import unittest
 from collections import defaultdict
 

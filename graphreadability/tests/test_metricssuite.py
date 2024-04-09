@@ -18,7 +18,7 @@ import sys
 from io import StringIO
 import unittest
 import networkx as nx
-from src.core.metricssuite import MetricsSuite
+from graphreadability import MetricsSuite
 
 
 class TestMetricsSuite(unittest.TestCase):

@@ -9,6 +9,7 @@ edge_length                   None 	None
 edge_orthogonality            None 	None
 gabriel_ratio                 None 	None
 neighbourhood_preservation    None 	None
+node_orthogonality            None 	None
 node_resolution               None 	None
 node_uniformity               None 	None
 --------------------------------------------------
